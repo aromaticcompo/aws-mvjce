@@ -459,6 +459,13 @@ body.settled .hub{transition:none}
 @keyframes eyes{50%{opacity:.1}}
 @media (prefers-reduced-motion:reduce){.beams{display:none}}
 @media (min-width:901px){.hdr .wrap{position:relative}.nav{position:absolute;left:50%;transform:translateX(-50%)}}
+/* reverse travel */
+#hudDir{color:var(--hc,#ff9900)}
+.travel.rev .hud h2{animation:recede 2.3s var(--ease) both}
+.travel:not(.rev) .hud h2{animation:approach 2.3s var(--ease) both}
+@keyframes approach{from{transform:scale(.82);letter-spacing:-.06em}to{transform:scale(1.04);letter-spacing:-.035em}}
+@keyframes recede{from{transform:scale(1.18);letter-spacing:-.02em}to{transform:scale(.96);letter-spacing:-.045em}}
+.travel.rev .hud-bar i{margin-left:auto}
 </style>
 </head>
 <body>
@@ -467,7 +474,7 @@ body.settled .hub{transition:none}
 <div class="travel" id="travel" aria-hidden="true">
   <span class="hud-corner tl mono" id="hudPath">campus-1 → /</span>
   <div class="hud">
-    <p class="mono">Routing packet via fiber</p>
+    <p class="mono"><span id="hudDir">Forward ▸▸</span> · routing packet via fiber</p>
     <h2 id="hudDest">Builds</h2>
     <div class="hud-bar"><i id="hudBar"></i></div>
     <div class="hud-meta mono"><span id="hudHops">hop 01/06</span><span id="hudLat">0.08 ms</span></div>
@@ -932,16 +939,17 @@ const Sound = (() => {
     lp.connect(tremG); tremG.connect(out); out.connect(master);
     lfo.start(t); lfo.stop(t + dur + .05);
   }
-  function whoosh(dur) {
+  function whoosh(dur, dir = 1) {
     const c = init(); if (!c) return;
     const t = c.currentTime, len = Math.floor(c.sampleRate * dur);
     const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     const src = c.createBufferSource(); src.buffer = buf;
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
-    bp.frequency.setValueAtTime(180, t);
-    bp.frequency.exponentialRampToValueAtTime(2200, t + dur * .78);
-    bp.frequency.exponentialRampToValueAtTime(500, t + dur);
+    const [f0, f1, f2] = dir > 0 ? [180, 2200, 500] : [2200, 180, 120];
+    bp.frequency.setValueAtTime(f0, t);
+    bp.frequency.exponentialRampToValueAtTime(f1, t + dur * .78);
+    bp.frequency.exponentialRampToValueAtTime(f2, t + dur);
     const g = c.createGain();
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(.08, t + dur * .75);
@@ -954,7 +962,7 @@ const Sound = (() => {
     set(v) { on = v; try { localStorage.setItem('mvjce-sound', v ? '1' : '0'); } catch (e) {} if (v) { init(); hum({dur:.35, base:73, peak:.12, trem:12}); } },
     tap()    { hum({dur:.55, base:55, peak:.22, trem:11}); buzz([14, 40, 10]); },
     soft()   { hum({dur:.28, base:82, peak:.09, trem:14}); buzz(8); },
-    travel(d){ hum({dur:d, base:41, peak:.13, trem:6, sweep:2.1}); whoosh(d * .95); },
+    travel(d, dir = 1){ hum(dir > 0 ? {dur:d, base:41, peak:.13, trem:6, sweep:2.1} : {dur:d, base:86, peak:.12, trem:6, sweep:.48}); whoosh(d * .95, dir); },
     arrive() { hum({dur:.9, base:68, peak:.18, trem:4, sweep:.62}); buzz([22, 50, 30]); }
   };
 })();
@@ -1060,13 +1068,13 @@ function makeFiber() {
   return {
     U,
     tint(a, b) { c1.set(a); c2.set(b); },
-    step(dt, speed, boot, glow = 1) {
+    step(dt, speed, boot, glow = 1, dir = 1) {
       U.uSpeed.value = speed; U.uBoot.value = boot; U.uGlow.value = glow;
-      U.uTime.value += dt * (0.35 + speed * 9.0);
+      U.uTime.value += dt * (0.35 + dir * speed * 9.0);
       U.uC1.value.lerp(c1, Math.min(1, dt * 3)); U.uC2.value.lerp(c2, Math.min(1, dt * 3));
       dm.color.copy(U.uC2.value); dm.opacity = 0.75 * boot;
-      t = (t + dt * (0.0035 + speed * speed * 0.085)) % 1;
-      roll += dt * (0.04 + speed * 1.6);
+      t = (((t + dt * (0.0035 + dir * speed * speed * 0.085)) % 1) + 1) % 1;
+      roll += dt * (0.04 + dir * speed * 1.6);
       const p = curve.getPointAt(t), q = curve.getPointAt((t + 0.006) % 1);
       camera.position.copy(p); camera.lookAt(q); camera.rotateZ(roll);
       camera.fov = 72 + speed * 26; camera.updateProjectionMatrix();
@@ -1081,7 +1089,7 @@ const travelEl = $('#travel'), hudBar = $('#hudBar'), hudDest = $('#hudDest'), h
 
 /* ---------- Loop ---------- */
 let running = false, last = 0, speed = 0, boot = 0, bootTarget = 0, heroVisible = true, travel = null, pendingPop = null;
-let lastSY = scrollY, scrollBoost = 0, heroProg = 0;
+let lastSY = scrollY, scrollBoost = 0, heroProg = 0, dirNow = 1;
 addEventListener('scroll', () => {
   const sy = scrollY, v = Math.abs(sy - lastSY); lastSY = sy;
   const hh = $('#top').offsetHeight || innerHeight;
@@ -1107,10 +1115,11 @@ function loop(now) {
   } else {
     speed += (0 - speed) * Math.min(1, dt * 3);
   }
+  if (travel) dirNow = travel.dir; else if (speed < .04) dirNow = 1;
   scrollBoost *= Math.exp(-dt * 2.6);
   const eff = Math.max(speed, scrollBoost * .5 + heroProg * .22);
   const glow = 1 + heroProg * 1.3 + scrollBoost * .9;
-  if (fiber) fiber.step(dt, eff, boot, travel ? 1 : glow);
+  if (fiber) fiber.step(dt, eff, boot, travel ? 1 : glow, speed > scrollBoost * .5 ? dirNow : 1);
   if (travel || heroVisible || speed > .01 || scrollBoost > .01 || Math.abs(bootTarget - boot) > .01) requestAnimationFrame(loop);
   else running = false;
 }
@@ -1125,13 +1134,13 @@ function land(id) {
     el.querySelectorAll('.rv').forEach(r => r.classList.add('in'));
     el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
     const focusT = el.querySelector('h2, h3'); if (focusT) { focusT.setAttribute('tabindex', '-1'); focusT.focus({preventScroll:true}); }
-    setTimeout(() => arrive(id), 140);
+    setTimeout(() => arrive(id, travel ? travel.dir : 1), 140);
   }
 }
 
 /* ---------- Port-specific arrivals ---------- */
 const ARRIVE = {about:'.pillar', tracks:'.track', events:'.row', scout:'.q'};
-function arrive(id) {
+function arrive(id, dir = 1) {
   const sec = document.getElementById(id), d = DEST[id];
   if (!sec || !d) return;
   document.documentElement.style.setProperty('--arrive', d.css);
@@ -1153,11 +1162,11 @@ function arrive(id) {
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'beams'); svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`); svg.setAttribute('aria-hidden', 'true');
   svg.style.color = d.css;
-  const ox = vw / 2, oy = -10;
+  const ox = vw / 2, oy = dir > 0 ? -10 : vh + 10;
   targets.forEach((o, i) => {
-    const tx = o.r.left + o.r.width / 2, ty = Math.max(90, o.r.top + Math.min(26, o.r.height / 2));
+    const tx = o.r.left + o.r.width / 2, ty = dir > 0 ? Math.max(90, o.r.top + Math.min(26, o.r.height / 2)) : Math.min(vh - 20, o.r.bottom - Math.min(26, o.r.height / 2));
     const path = document.createElementNS(NS, 'path');
-    path.setAttribute('d', `M${ox} ${oy} C ${ox} ${ty * .6}, ${tx} ${ty * .3}, ${tx} ${ty}`);
+    path.setAttribute('d', dir > 0 ? `M${ox} ${oy} C ${ox} ${ty * .6}, ${tx} ${ty * .3}, ${tx} ${ty}` : `M${ox} ${oy} C ${ox} ${vh - (vh - ty) * .6}, ${tx} ${vh - (vh - ty) * .3}, ${tx} ${ty}`);
     path.style.setProperty('--d', (i * 110) + 'ms');
     svg.appendChild(path);
     const tip = document.createElementNS(NS, 'circle');
@@ -1198,14 +1207,18 @@ function go(id, opts = {}) {
     return;
   }
   const d = DEST[id];
+  const targetY = id === 'top' ? 0 : document.getElementById(id).getBoundingClientRect().top + scrollY - 72;
+  const dir = targetY >= scrollY - 8 ? 1 : -1;
   fiber.tint(d.c[0], d.c[1]);
+  $('#hudDir').textContent = dir > 0 ? 'Forward ▸▸' : '◂◂ Reverse';
+  travelEl.classList.toggle('rev', dir < 0);
   travelEl.style.setProperty('--hc', d.css);
   hudDest.textContent = d.label;
   hudPath.textContent = 'campus-1 → ' + d.path;
   hudBar.style.width = '0%';
-  travel = {id, start: performance.now(), dur: 2300, hops: 5 + Math.floor(Math.random() * 4), flashed:false, jumped:false};
+  travel = {id, dir, start: performance.now(), dur: 2300, hops: 5 + Math.floor(Math.random() * 4), flashed:false, jumped:false};
   body.classList.add('traveling');
-  Sound.travel(travel.dur / 1000);
+  Sound.travel(travel.dur / 1000, dir);
   wake();
 }
 
