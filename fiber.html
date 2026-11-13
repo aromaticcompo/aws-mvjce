@@ -410,6 +410,55 @@ body.away .back{opacity:1;transform:none;pointer-events:auto}
   .back{padding:0 14px}
 }
 @media (prefers-reduced-motion:reduce){.hub,.port{opacity:1!important;transform:none!important}}
+
+/* ---------- v3: sound toggle, scroll glow, arrivals ---------- */
+.snd{width:40px;height:40px;border-radius:999px;border:1px solid var(--line-2);display:grid;place-items:center;color:var(--text);margin-left:auto;margin-right:-12px;transition:border-color .2s,color .2s}
+.snd:hover{border-color:var(--orange);color:var(--orange)}
+.snd .x{display:none}
+.snd[aria-pressed="false"]{color:var(--dim)}
+.snd[aria-pressed="false"] .w1,.snd[aria-pressed="false"] .w2{display:none}
+.snd[aria-pressed="false"] .x{display:inline}
+.snd[aria-pressed="true"] .w1{animation:wave 2.4s ease-in-out infinite}
+.snd[aria-pressed="true"] .w2{animation:wave 2.4s ease-in-out .3s infinite}
+@keyframes wave{0%,100%{opacity:1}50%{opacity:.35}}
+@media (max-width:900px){.snd{margin-right:8px}}
+body.booted .hub{opacity:calc(1 - var(--hp,0) * .9);transform:translateY(calc(var(--hp,0) * -70px))}
+body.settled .hub{transition:none}
+.hero h1{filter:drop-shadow(0 0 calc(var(--hp,0) * 30px) rgba(255,153,0,calc(var(--hp,0) * .5)))}
+
+.beams{position:fixed;inset:0;width:100vw;height:100vh;z-index:65;pointer-events:none}
+.beams path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;filter:drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor);animation:beam .62s var(--ease) var(--d) forwards,fadeout .7s ease calc(var(--d) + 1.2s) forwards}
+.beams circle{fill:currentColor;opacity:0;transform-box:fill-box;transform-origin:center;filter:drop-shadow(0 0 8px currentColor);animation:tip .9s var(--ease) var(--d) forwards}
+@keyframes beam{to{stroke-dashoffset:0}}
+@keyframes fadeout{to{opacity:0}}
+@keyframes tip{0%{opacity:0;transform:scale(.2)}30%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(4)}}
+.hit{animation:hit 1.5s var(--ease)}
+@keyframes hit{0%{box-shadow:0 0 0 1px var(--arrive),0 0 60px -6px var(--arrive);border-color:var(--arrive)}100%{box-shadow:0 0 0 0 transparent,0 0 0 0 transparent}}
+.row.hit{animation:rowhit 1.5s var(--ease)}
+@keyframes rowhit{0%{background:linear-gradient(90deg,rgba(127,227,236,.16),transparent 70%)}100%{background:transparent}}
+.row.hit .ic{animation:hit 1.5s var(--ease)}
+
+/* About: the numbers ignite in sequence */
+.arrive-about .pillar .num{animation:numlit 1.8s var(--ease) both}
+.arrive-about .pillar:nth-child(2) .num{animation-delay:.15s}
+.arrive-about .pillar:nth-child(3) .num{animation-delay:.3s}
+@keyframes numlit{0%{-webkit-text-stroke-color:var(--line-2);color:transparent}25%{-webkit-text-stroke-color:var(--orange);color:rgba(255,153,0,.35);text-shadow:0 0 40px rgba(255,153,0,.6)}100%{-webkit-text-stroke-color:var(--line-2);color:transparent}}
+/* Builds: the architecture diagrams draw themselves */
+.arrive-tracks .arch rect,.arrive-tracks .arch path,.arrive-tracks .arch circle{stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.6s var(--ease) .55s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+/* Events: a signal scans down the log */
+.log{position:relative;overflow:hidden}
+.arrive-events .log::after{content:"";position:absolute;left:0;right:0;top:-90px;height:90px;pointer-events:none;background:linear-gradient(180deg,transparent,rgba(127,227,236,.16));border-bottom:1px solid var(--cyan);box-shadow:0 8px 24px -4px rgba(127,227,236,.5);animation:scan 1.8s var(--ease) .35s forwards}
+@keyframes scan{to{top:100%}}
+.arrive-events .when.up{animation:pill 1.4s var(--ease) .8s}
+@keyframes pill{0%,100%{box-shadow:none}40%{box-shadow:0 0 0 4px rgba(255,153,0,.15),0 0 24px rgba(255,153,0,.5)}}
+/* FAQ: Scout wakes up */
+.arrive-scout .bot{animation:botwake 1s var(--ease)}
+@keyframes botwake{0%{transform:scale(.9);box-shadow:0 0 0 0 rgba(127,227,236,0)}40%{transform:scale(1.08);box-shadow:0 0 0 8px rgba(127,227,236,.12),0 0 50px rgba(127,227,236,.45)}100%{transform:none;box-shadow:none}}
+.arrive-scout .bot .eyes{animation:eyes 1s steps(2) 2}
+@keyframes eyes{50%{opacity:.1}}
+@media (prefers-reduced-motion:reduce){.beams{display:none}}
+@media (min-width:901px){.hdr .wrap{position:relative}.nav{position:absolute;left:50%;transform:translateX(-50%)}}
 </style>
 </head>
 <body>
@@ -440,6 +489,9 @@ body.away .back{opacity:1;transform:none;pointer-events:auto}
       <a href="#events">Events</a>
       <a href="#scout">FAQ</a>
     </nav>
+    <button class="snd" id="snd" type="button" aria-pressed="true" aria-label="Sound and vibration on" title="Sound &amp; vibration">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="w1" d="M15.5 9.2a4 4 0 0 1 0 5.6"/><path class="w2" d="M18.3 6.6a7.6 7.6 0 0 1 0 10.8"/><path class="x" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </button>
     <a class="btn btn-primary btn-sm" href="#join" data-join>I want in <span class="arr" aria-hidden="true">↗</span></a>
     <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span></button>
   </div>
@@ -535,7 +587,7 @@ body.away .back{opacity:1;transform:none;pointer-events:auto}
         <p class="kicker mono rv"><b>01.1</b> Core team</p>
         <h3 class="rv d1">The people keeping <em>the lights on.</em></h3>
       </div>
-      <p class="rv d2">A student crew that plans sessions, mentors builds and grows the community. Want a seat? Come to a session and say hi.</p>
+      <p class="rv d2">A student crew that plans sessions, mentors builds and grows the community. Come to a session and say hi.</p>
     </div>
     <div class="team" id="team"></div>
   </div>
@@ -657,10 +709,10 @@ const CONFIG = {
   joinUrl: '',
   // Core team — fill in names. Leave name '' to show an "Open seat" card.
   team: [
-    {role:'Club lead',            name:'', note:'Sets direction and runs the group'},
-    {role:'Events & sessions',    name:'', note:'Plans workshops and talks'},
-    {role:'Build tracks',         name:'', note:'Mentors project teams'},
-    {role:'Community & outreach', name:'', note:'Welcomes new builders'}
+    {role:'President',      name:'Mohammed Sahif'},
+    {role:'Vice President', name:'C Varun'},
+    {role:'Tech Lead',      name:'Srikant'},
+    {role:'PR Lead',        name:'Shashank Gowda'}
   ],            // registration form URL; leave '' to send people to #events
   heroVideo: '',          // e.g. 'assets/hero.mp4' (a Luma loop). '' = animated grid only
   events: [
@@ -831,6 +883,86 @@ const DEST = {
   join:   {label:'Join',            path:'/join',    c:[0xff9900, 0xffffff], css:'#ff9900'}
 };
 
+/* Routes shown in the address bar (back/forward travel through the fiber) */
+const ROUTE = {top:'', about:'about', path:'approach', tracks:'builds', events:'events', scout:'faq', join:'join'};
+function idFromHash(h) {
+  const k = (h || '').replace(/^#/, '');
+  if (!k) return 'top';
+  for (const id in ROUTE) if (ROUTE[id] === k) return id;
+  return DEST[k] ? k : null;
+}
+
+/* ---------- Sound + haptics (Web Audio, synthesized — no files) ---------- */
+const Sound = (() => {
+  let ctx = null, master = null, on = true;
+  try { on = localStorage.getItem('mvjce-sound') !== '0'; } catch (e) {}
+  function init() {
+    if (!on) return null;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain(); master.gain.value = 0.6;
+      const comp = ctx.createDynamicsCompressor();
+      master.connect(comp); comp.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  // soft, low hum with a tremolo "vibration"
+  function hum({dur = .6, base = 55, peak = .22, trem = 9, sweep = 1}) {
+    const c = init(); if (!c) return;
+    const t = c.currentTime;
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(peak, t + .05);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380; lp.Q.value = .8;
+    const tremG = c.createGain(); tremG.gain.value = .7;
+    const lfo = c.createOscillator(); lfo.frequency.value = trem;
+    const depth = c.createGain(); depth.gain.value = .3;
+    lfo.connect(depth); depth.connect(tremG.gain);
+    [[base, 'sine', 1], [base * 2, 'sine', .4], [base * 1.5, 'triangle', .14]].forEach(([f, type, v]) => {
+      const o = c.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(f, t);
+      if (sweep !== 1) o.frequency.exponentialRampToValueAtTime(f * sweep, t + dur * .85);
+      const g = c.createGain(); g.gain.value = v;
+      o.connect(g); g.connect(lp); o.start(t); o.stop(t + dur + .05);
+    });
+    lp.connect(tremG); tremG.connect(out); out.connect(master);
+    lfo.start(t); lfo.stop(t + dur + .05);
+  }
+  function whoosh(dur) {
+    const c = init(); if (!c) return;
+    const t = c.currentTime, len = Math.floor(c.sampleRate * dur);
+    const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(180, t);
+    bp.frequency.exponentialRampToValueAtTime(2200, t + dur * .78);
+    bp.frequency.exponentialRampToValueAtTime(500, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(.08, t + dur * .75);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp); bp.connect(g); g.connect(master); src.start(t); src.stop(t + dur);
+  }
+  function buzz(p) { if (!on) return; try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+  return {
+    get on() { return on; },
+    set(v) { on = v; try { localStorage.setItem('mvjce-sound', v ? '1' : '0'); } catch (e) {} if (v) { init(); hum({dur:.35, base:73, peak:.12, trem:12}); } },
+    tap()    { hum({dur:.55, base:55, peak:.22, trem:11}); buzz([14, 40, 10]); },
+    soft()   { hum({dur:.28, base:82, peak:.09, trem:14}); buzz(8); },
+    travel(d){ hum({dur:d, base:41, peak:.13, trem:6, sweep:2.1}); whoosh(d * .95); },
+    arrive() { hum({dur:.9, base:68, peak:.18, trem:4, sweep:.62}); buzz([22, 50, 30]); }
+  };
+})();
+const sndBtn = $('#snd');
+function paintSnd() { sndBtn.setAttribute('aria-pressed', Sound.on); sndBtn.setAttribute('aria-label', Sound.on ? 'Sound and vibration on' : 'Sound and vibration off'); }
+paintSnd();
+sndBtn.addEventListener('click', e => { e.stopPropagation(); Sound.set(!Sound.on); paintSnd(); });
+
 /* Team */
 $('#team').innerHTML = CONFIG.team.map(m => {
   const open = !m.name;
@@ -866,7 +998,7 @@ function makeFiber() {
   const geo = new THREE.TubeGeometry(curve, SEG, 2.2, 72, true);
 
   const U = {
-    uTime:{value:0}, uSpeed:{value:0}, uBoot:{value:0},
+    uTime:{value:0}, uSpeed:{value:0}, uBoot:{value:0}, uGlow:{value:1},
     uC1:{value:new THREE.Color(0xff9900)}, uC2:{value:new THREE.Color(0x7fe3ec)}
   };
   const mat = new THREE.ShaderMaterial({
@@ -876,7 +1008,7 @@ function makeFiber() {
       void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
     fragmentShader: `
       precision highp float;
-      uniform float uTime, uSpeed, uBoot; uniform vec3 uC1, uC2;
+      uniform float uTime, uSpeed, uBoot, uGlow; uniform vec3 uC1, uC2;
       varying vec2 vUv; varying float vDepth;
       float hash(float n){ return fract(sin(n) * 43758.5453); }
       void main(){
@@ -892,10 +1024,10 @@ function makeFiber() {
         float s = fract(x);
         float k = mix(24.0, 1.6, uSpeed);
         float streak = exp(-s * k);
-        float act = step(0.5 - uSpeed * 0.5, h2) * uBoot;
+        float act = step(0.5 - uSpeed * 0.5 - (uGlow - 1.0) * 0.22, h2) * uBoot;
         vec3 col = mix(uC1, uC2, h);
         vec3 c = vec3(0.010, 0.014, 0.022) + col * glow * 0.06 * uBoot;
-        c += col * streak * (core * 1.9 + glow * 0.3) * act * (1.15 + uSpeed * 0.5);
+        c += col * streak * (core * 1.9 + glow * 0.3) * act * (1.15 + uSpeed * 0.5) * uGlow;
         float ring = pow(abs(sin(vUv.x * 900.0)), 120.0);
         c += col * ring * 0.05 * uBoot;
         float fog = exp(-vDepth * mix(0.05, 0.03, uSpeed));
@@ -928,8 +1060,8 @@ function makeFiber() {
   return {
     U,
     tint(a, b) { c1.set(a); c2.set(b); },
-    step(dt, speed, boot) {
-      U.uSpeed.value = speed; U.uBoot.value = boot;
+    step(dt, speed, boot, glow = 1) {
+      U.uSpeed.value = speed; U.uBoot.value = boot; U.uGlow.value = glow;
       U.uTime.value += dt * (0.35 + speed * 9.0);
       U.uC1.value.lerp(c1, Math.min(1, dt * 3)); U.uC2.value.lerp(c2, Math.min(1, dt * 3));
       dm.color.copy(U.uC2.value); dm.opacity = 0.75 * boot;
@@ -948,7 +1080,15 @@ const body = document.body;
 const travelEl = $('#travel'), hudBar = $('#hudBar'), hudDest = $('#hudDest'), hudHops = $('#hudHops'), hudLat = $('#hudLat'), hudPath = $('#hudPath');
 
 /* ---------- Loop ---------- */
-let running = false, last = 0, speed = 0, boot = 0, bootTarget = 0, heroVisible = true, travel = null;
+let running = false, last = 0, speed = 0, boot = 0, bootTarget = 0, heroVisible = true, travel = null, pendingPop = null;
+let lastSY = scrollY, scrollBoost = 0, heroProg = 0;
+addEventListener('scroll', () => {
+  const sy = scrollY, v = Math.abs(sy - lastSY); lastSY = sy;
+  const hh = $('#top').offsetHeight || innerHeight;
+  heroProg = Math.max(0, Math.min(1, sy / hh));
+  document.documentElement.style.setProperty('--hp', heroProg.toFixed(3));
+  if (heroVisible && !travel) { scrollBoost = Math.min(1, scrollBoost + v / 260); wake(); }
+}, {passive:true});
 function wake() { if (!running && fiber) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
 function loop(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -963,12 +1103,15 @@ function loop(now) {
     hudLat.textContent = (0.08 + p * 0.34 + Math.random() * 0.02).toFixed(2) + ' ms';
     if (p > .8 && !travel.flashed) { travel.flashed = true; travelEl.classList.add('flashing'); }
     if (p > .88 && !travel.jumped) { travel.jumped = true; land(travel.id); }
-    if (p >= 1) { travel = null; body.classList.remove('traveling'); travelEl.classList.remove('flashing'); }
+    if (p >= 1) { travel = null; body.classList.remove('traveling'); travelEl.classList.remove('flashing'); if (pendingPop) { const n = pendingPop; pendingPop = null; setTimeout(() => go(n, {fromPop:true}), 60); } }
   } else {
     speed += (0 - speed) * Math.min(1, dt * 3);
   }
-  if (fiber) fiber.step(dt, speed, boot);
-  if (travel || heroVisible || speed > .01 || Math.abs(bootTarget - boot) > .01) requestAnimationFrame(loop);
+  scrollBoost *= Math.exp(-dt * 2.6);
+  const eff = Math.max(speed, scrollBoost * .5 + heroProg * .22);
+  const glow = 1 + heroProg * 1.3 + scrollBoost * .9;
+  if (fiber) fiber.step(dt, eff, boot, travel ? 1 : glow);
+  if (travel || heroVisible || speed > .01 || scrollBoost > .01 || Math.abs(bootTarget - boot) > .01) requestAnimationFrame(loop);
   else running = false;
 }
 
@@ -976,17 +1119,78 @@ function land(id) {
   const el = id === 'top' ? document.documentElement : document.getElementById(id);
   const html = document.documentElement, prev = html.style.scrollBehavior;
   html.style.scrollBehavior = 'auto';
-  if (id === 'top') scrollTo(0, 0); else el.scrollIntoView({block:'start'});
+  if (id === 'top') scrollTo({top:0, behavior:'instant'}); else el.scrollIntoView({block:'start', behavior:'instant'});
   html.style.scrollBehavior = prev;
   if (id !== 'top') {
     el.querySelectorAll('.rv').forEach(r => r.classList.add('in'));
     el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
     const focusT = el.querySelector('h2, h3'); if (focusT) { focusT.setAttribute('tabindex', '-1'); focusT.focus({preventScroll:true}); }
+    setTimeout(() => arrive(id), 140);
   }
 }
 
-function go(id) {
-  if (!DEST[id] || travel) return;
+/* ---------- Port-specific arrivals ---------- */
+const ARRIVE = {about:'.pillar', tracks:'.track', events:'.row', scout:'.q'};
+function arrive(id) {
+  const sec = document.getElementById(id), d = DEST[id];
+  if (!sec || !d) return;
+  document.documentElement.style.setProperty('--arrive', d.css);
+  sec.classList.remove('arrive-' + id); void sec.offsetWidth; sec.classList.add('arrive-' + id);
+  setTimeout(() => sec.classList.remove('arrive-' + id), 2800);
+  Sound.arrive();
+  if (id === 'scout') {
+    const qsAll = [...document.querySelectorAll('.q')];
+    const cur = Math.max(0, qsAll.findIndex(q => q.getAttribute('aria-pressed') === 'true'));
+    setTimeout(() => answer(cur, true), 700);
+  }
+  const sel = ARRIVE[id]; if (!sel) return;
+  const vw = innerWidth, vh = innerHeight;
+  const targets = [...sec.querySelectorAll(sel)]
+    .map(el => ({el, r: el.getBoundingClientRect()}))
+    .filter(o => o.r.top < vh - 30 && o.r.bottom > 80).slice(0, 6);
+  if (!targets.length) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'beams'); svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`); svg.setAttribute('aria-hidden', 'true');
+  svg.style.color = d.css;
+  const ox = vw / 2, oy = -10;
+  targets.forEach((o, i) => {
+    const tx = o.r.left + o.r.width / 2, ty = Math.max(90, o.r.top + Math.min(26, o.r.height / 2));
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', `M${ox} ${oy} C ${ox} ${ty * .6}, ${tx} ${ty * .3}, ${tx} ${ty}`);
+    path.style.setProperty('--d', (i * 110) + 'ms');
+    svg.appendChild(path);
+    const tip = document.createElementNS(NS, 'circle');
+    tip.setAttribute('cx', tx); tip.setAttribute('cy', ty); tip.setAttribute('r', 5);
+    tip.style.setProperty('--d', (i * 110 + 520) + 'ms');
+    svg.appendChild(tip);
+    setTimeout(() => { o.el.classList.remove('hit'); void o.el.offsetWidth; o.el.classList.add('hit'); setTimeout(() => o.el.classList.remove('hit'), 1500); }, 560 + i * 110);
+  });
+  document.body.appendChild(svg);
+  svg.querySelectorAll('path').forEach(p => { const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = L; });
+  setTimeout(() => svg.remove(), 2600);
+}
+
+/* Facts count up the first time they're seen */
+const factIo = new IntersectionObserver(es => es.forEach(e => {
+  if (!e.isIntersecting) return; factIo.unobserve(e.target);
+  const node = e.target.firstChild, n = parseInt(node.textContent, 10);
+  if (!n || reduce) return;
+  const t0 = performance.now();
+  (function f(now) { const k = Math.min(1, (now - t0) / 1100); node.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(f); })(t0);
+}), {threshold: .6});
+document.querySelectorAll('.fact b').forEach(b => factIo.observe(b));
+
+function pushRoute(id) {
+  const h = ROUTE[id] ?? id;
+  const url = h ? '#' + h : location.pathname + location.search;
+  if ((location.hash || '') === (h ? '#' + h : '')) return;
+  try { history.pushState({id}, '', url); } catch (e) {}
+}
+function go(id, opts = {}) {
+  if (!DEST[id]) return;
+  if (travel) { if (opts.fromPop) pendingPop = id; return; }
+  if (!opts.fromPop) pushRoute(id);
   body.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', false);
   if (!fiber || reduce || !body.classList.contains('booted')) {
     if (id === 'top') scrollTo({top:0, behavior: reduce ? 'auto' : 'smooth'});
@@ -1001,17 +1205,25 @@ function go(id) {
   hudBar.style.width = '0%';
   travel = {id, start: performance.now(), dur: 2300, hops: 5 + Math.floor(Math.random() * 4), flashed:false, jumped:false};
   body.classList.add('traveling');
+  Sound.travel(travel.dur / 1000);
   wake();
 }
+
+/* Back / forward buttons fly through the fiber too */
+addEventListener('popstate', () => { const id = idFromHash(location.hash) || 'top'; go(id, {fromPop:true}); });
+try { history.scrollRestoration = 'manual'; } catch (e) {}
+const startRoute = idFromHash(location.hash);
+if (location.hash) scrollTo(0, 0);
 
 /* Intercept in-page links + ports */
 document.addEventListener('click', e => {
   const port = e.target.closest('[data-go]');
-  if (port) { e.preventDefault(); go(port.dataset.go); return; }
+  if (port) { e.preventDefault(); Sound.tap(); go(port.dataset.go); return; }
+  if (e.target.closest('.chip, .q')) { Sound.soft(); return; }
   const a = e.target.closest('a[href^="#"]');
   if (!a) return;
   const id = a.getAttribute('href').slice(1);
-  if (DEST[id]) { e.preventDefault(); go(id); }
+  if (DEST[id]) { e.preventDefault(); Sound.tap(); go(id); }
 });
 
 /* Hero visibility -> canvas on/off */
@@ -1044,6 +1256,8 @@ new IntersectionObserver(([en]) => {
     setTimeout(() => {
       $('#boot').classList.add('done'); body.classList.add('booted', 'lit');
       try { sessionStorage.setItem('mvjce-booted', '1'); } catch (e) {}
+      setTimeout(() => body.classList.add('settled'), 1200);
+      if (startRoute && startRoute !== 'top') setTimeout(() => go(startRoute, {fromPop:true}), reduce ? 0 : 450);
     }, reduce ? 0 : 380);
   }
   $('#skipBoot').addEventListener('click', finish);
