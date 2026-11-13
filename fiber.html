@@ -566,6 +566,16 @@ html.lock,html.lock body{overflow:hidden}
   .dock{display:none}
   .back{display:flex}
 }
+/* rack patching HUD: keep the rack visible, info sits low */
+.hud{top:auto;bottom:max(8%,64px);transform:translateX(-50%)}
+.hud h2{font-size:clamp(28px,4.6vw,62px)}
+.travel .hud h2{animation:approach 2.7s var(--ease) both}
+.hud-corner.tl{max-width:60vw}
+@media (max-width:760px){.hud{bottom:calc(40px + env(safe-area-inset-bottom))}.hud-corner.tl{display:block;font-size:9.5px;top:calc(76px + env(safe-area-inset-top));left:14px;right:14px;max-width:none}}
+.hud{bottom:max(5%,40px);width:min(460px,86vw)}
+.hud h2{font-size:clamp(24px,3.4vw,46px);margin-top:8px}
+.hud-bar{margin-top:16px}
+.hud::before{height:200%;width:130%}
 </style>
 </head>
 <body>
@@ -1188,8 +1198,197 @@ function makeFiber() {
     renderer.setSize(w, Math.round(h * 1.15), false); camera.aspect = w / (h * 1.15); camera.updateProjectionMatrix();
   }
   resize(); addEventListener('resize', resize); addEventListener('orientationchange', () => setTimeout(() => { lw = 0; resize(); }, 250));
+  /* ---------- 3D server rack: sections are stacks, travel = patching a fiber between them ---------- */
+  const RACK_UNITS = [
+    {id:'top', label:'PORTS'}, {id:'about', label:'ABOUT & TEAM'}, {id:'events', label:'UPCOMING EVENTS'},
+    {id:'tracks', label:'BUILDS'}, {id:'scout', label:'FAQ'}, {id:'join', label:'JOIN'}
+  ];
+  let R = null;
+  const glowTex = (() => {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 64;
+    const c = cv.getContext('2d'), g = c.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(.25, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = g; c.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(cv);
+  })();
+  function buildRack() {
+    const sc = new THREE.Scene();
+    sc.background = new THREE.Color(0x07090d);
+    sc.fog = new THREE.Fog(0x07090d, 5, 14);
+    const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 60);
+    sc.add(new THREE.AmbientLight(0x9aa8b8, 0.45));
+    const key = new THREE.DirectionalLight(0xffffff, 0.6); key.position.set(3, 4, 6); sc.add(key);
+    const rim = new THREE.PointLight(0xff9900, 1.1, 8); rim.position.set(2.8, 0.4, 1.6); sc.add(rim);
+    const pulseLight = new THREE.PointLight(0xffb547, 0, 1.8); sc.add(pulseLight);
+
+    const UW = 2.4, UH = 0.3, UD = 1.1, GAP = 0.06, N = RACK_UNITS.length;
+    const total = N * UH + (N - 1) * GAP;
+    const yOf = i => total / 2 - UH / 2 - i * (UH + GAP);
+    const metal = new THREE.MeshStandardMaterial({color: 0x1a2028, metalness: .65, roughness: .42});
+    const dark = new THREE.MeshStandardMaterial({color: 0x0b0e12, metalness: .4, roughness: .8});
+    const postG = new THREE.BoxGeometry(0.08, total + 0.42, 0.08);
+    [[-UW/2 - 0.08, UD/2], [UW/2 + 0.08, UD/2], [-UW/2 - 0.08, -UD/2], [UW/2 + 0.08, -UD/2]].forEach(([x, z]) => { const m = new THREE.Mesh(postG, metal); m.position.set(x, 0, z); sc.add(m); });
+    const capG = new THREE.BoxGeometry(UW + 0.34, 0.08, UD + 0.12);
+    [total/2 + 0.21, -total/2 - 0.21].forEach(y => { const m = new THREE.Mesh(capG, metal); m.position.y = y; sc.add(m); });
+    const back = new THREE.Mesh(new THREE.BoxGeometry(UW + 0.2, total + 0.42, 0.04), dark); back.position.z = -UD/2 - 0.06; sc.add(back);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), new THREE.MeshStandardMaterial({color: 0x07090d, metalness: .2, roughness: .85}));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = -total/2 - 0.25; sc.add(floor);
+
+    const ledG = new THREE.BoxGeometry(0.032, 0.032, 0.01), portG = new THREE.BoxGeometry(0.1, 0.07, 0.04);
+    const toX = px => (px / 1024 - .5) * UW;
+    const units = RACK_UNITS.map((u, i) => {
+      const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 128;
+      const c = cv.getContext('2d');
+      const g = c.createLinearGradient(0, 0, 0, 128);
+      g.addColorStop(0, '#262d37'); g.addColorStop(.14, '#181d24'); g.addColorStop(1, '#0f1217');
+      c.fillStyle = g; c.fillRect(0, 0, 1024, 128);
+      c.fillStyle = 'rgba(255,255,255,.1)'; c.fillRect(0, 0, 1024, 2);
+      c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 3;
+      for (let v = 0; v < 8; v++) { c.beginPath(); c.moveTo(28 + v * 11, 36); c.lineTo(28 + v * 11, 92); c.stroke(); }
+      c.textBaseline = 'middle';
+      c.font = "500 26px 'JetBrains Mono', ui-monospace, monospace"; c.fillStyle = '#ff9900';
+      c.fillText(String(i + 1).padStart(2, '0'), 140, 66);
+      c.font = "800 36px 'Archivo', 'Arial Narrow', Arial, sans-serif"; c.fillStyle = '#ece8e1';
+      c.fillText(u.label, 192, 66);
+      for (let d = 0; d < 2; d++) { c.fillStyle = '#07090c'; c.fillRect(612 + d * 70, 34, 58, 60); c.strokeStyle = 'rgba(255,255,255,.07)'; c.strokeRect(612 + d * 70, 34, 58, 60); }
+      const tex = new THREE.CanvasTexture(cv); tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      const front = new THREE.MeshStandardMaterial({map: tex, metalness: .35, roughness: .55});
+      const box = new THREE.Mesh(new THREE.BoxGeometry(UW, UH, UD), [metal, metal, metal, metal, front, dark]);
+      box.position.y = yOf(i); sc.add(box);
+      const leds = [];
+      for (let k = 0; k < 6; k++) {
+        const m = new THREE.Mesh(ledG, new THREE.MeshBasicMaterial({color: 0x2a2010}));
+        m.position.set(toX(790 + k * 24), yOf(i), UD/2 + 0.006); sc.add(m);
+        leds.push({m, cyan: Math.random() < .22, ph: Math.random() * 6.28, rate: 2 + Math.random() * 8});
+      }
+      const port = new THREE.Mesh(portG, new THREE.MeshBasicMaterial({color: 0x1d232b}));
+      port.position.set(toX(968), yOf(i), UD/2 + 0.02); sc.add(port);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xff9900, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false}));
+      halo.scale.set(.55, .55, 1); halo.position.copy(port.position); halo.position.z += .03; sc.add(halo);
+      return {id: u.id, label: u.label, idx: i, y: yOf(i), leds, port, halo};
+    });
+    // dust in the air
+    const DN = phone ? 160 : 360, dp = new Float32Array(DN * 3);
+    for (let i = 0; i < DN; i++) { dp[i*3] = (Math.random() - .3) * 7; dp[i*3+1] = (Math.random() - .5) * 4; dp[i*3+2] = (Math.random() - .2) * 5; }
+    const dgeo = new THREE.BufferGeometry(); dgeo.setAttribute('position', new THREE.BufferAttribute(dp, 3));
+    const dust = new THREE.Points(dgeo, new THREE.PointsMaterial({size: .018, color: 0xffb547, transparent: true, opacity: .45, blending: THREE.AdditiveBlending, depthWrite: false}));
+    sc.add(dust);
+    const pulse = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffd28a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false}));
+    pulse.scale.set(.42, .42, 1); sc.add(pulse);
+    return {sc, cam, units, pulse, pulseLight, dust, UD, camPos: new THREE.Vector3(), camLook: new THREE.Vector3(), cable: null, time: 0};
+  }
+  const cableVert = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+  const cableFrag = `
+    precision highp float;
+    uniform float uTime, uHead; uniform vec3 uC1, uC2; varying vec2 vUv;
+    float hash(float n){ return fract(sin(n) * 43758.5453); }
+    void main(){
+      float x = vUv.x;
+      float lanes = 7.0, ly = vUv.y * lanes, lane = floor(ly);
+      float d = abs(fract(ly) - 0.5) * 2.0;
+      float core = pow(1.0 - d, 5.0);
+      float h = hash(lane + 3.0);
+      float s = fract(x * (26.0 + h * 14.0) - uTime * (1.6 + h * 1.2) + h * 7.0);
+      float lit = step(x, uHead);
+      float streak = exp(-s * 5.0) * lit;
+      float head = exp(-pow((x - uHead) * 30.0, 2.0)) * step(0.001, uHead);
+      vec3 col = mix(uC1, uC2, h);
+      vec3 c = vec3(0.045, 0.055, 0.07) + col * 0.06;
+      c += col * (streak * core * 1.5 + lit * 0.22);
+      c += (vec3(1.0, 0.92, 0.78) * 1.4 + col) * head;
+      gl_FragColor = vec4(c, 1.0);
+    }`;
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const sstep = (a, b, v) => { const k = Math.max(0, Math.min(1, (v - a) / (b - a))); return k * k * (3 - 2 * k); };
+  function rackBegin(fromId, toId, ca, cb) {
+    if (!R) R = buildRack();
+    const a = R.units.find(u => u.id === fromId) || R.units[0];
+    const b = R.units.find(u => u.id === toId) || R.units[0];
+    const pa = a.port.position.clone(), pb = b.port.position.clone();
+    const dy = pb.y - pa.y, span = Math.abs(dy);
+    const out = 0.6 + span * 0.28, zf = R.UD / 2 + 0.5 + span * 0.18;
+    const curve = new THREE.CatmullRomCurve3([
+      pa, pa.clone().add(V3(0.12, 0, 0.22)),
+      V3(pa.x + out, pa.y + dy * 0.22, zf), V3(pb.x + out, pb.y - dy * 0.22, zf),
+      pb.clone().add(V3(0.12, 0, 0.22)), pb
+    ], false, 'centripetal');
+    const TS = 260, RS = 12;
+    const geo = new THREE.TubeGeometry(curve, TS, 0.032, RS, false);
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {uTime: {value: 0}, uHead: {value: 0}, uC1: {value: new THREE.Color(ca)}, uC2: {value: new THREE.Color(cb)}},
+      vertexShader: cableVert, fragmentShader: cableFrag
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    geo.setDrawRange(0, 0);
+    R.sc.add(mesh);
+    R.cable = {curve, geo, mat, mesh, TS, per: RS * 6};
+    R.a = a; R.b = b; R.ca = new THREE.Color(ca); R.cb = new THREE.Color(cb);
+    R.pulse.material.color.set(cb === 0xffffff ? ca : cb);
+    R.started = false;
+  }
+  function rackStep(dt, p) {
+    if (!R || !R.cable) return;
+    const {cam, units, cable, a, b} = R;
+    R.time += dt;
+    const w = lw || innerWidth, h = (lh || innerHeight) * 1.15;
+    cam.aspect = w / h;
+    const portrait = cam.aspect < 1;
+    cam.fov = portrait ? 55 : 40; cam.updateProjectionMatrix();
+    const far = portrait ? 1 + (1 - cam.aspect) * 2.05 : 1;
+    R.sc.fog.near = 5 * far; R.sc.fog.far = 14 * far;
+    const SX = portrait ? .45 : 1, LX = portrait ? .75 : .45;
+    const draw = sstep(.05, .4, p), head = sstep(.36, .82, p);
+    const segs = Math.floor(draw * cable.TS);
+    cable.geo.setDrawRange(0, segs * cable.per);
+    cable.mat.uniforms.uTime.value = R.time;
+    cable.mat.uniforms.uHead.value = head;
+    // lights on the stacks
+    const arrived = p > .8;
+    units.forEach(u => {
+      const on = u === a ? 1 : (u === b && arrived) ? 1 : 0.22;
+      u.leds.forEach(l => {
+        const blink = (Math.sin(R.time * l.rate + l.ph) * .5 + .5) > .35 ? 1 : .25;
+        const v = on * blink;
+        l.m.material.color.setRGB(...(l.cyan ? [0.5 * v, 0.89 * v, 0.93 * v] : [1 * v, 0.6 * v, 0.02 + 0.0 * v]));
+      });
+    });
+    a.port.material.color.copy(R.ca);
+    a.halo.material.color.copy(R.ca); a.halo.material.opacity = .85 - head * .45;
+    const plugged = draw >= .999;
+    b.port.material.color.set(plugged ? (arrived ? R.cb : R.ca) : 0x1d232b);
+    b.halo.material.color.copy(arrived ? R.cb : R.ca);
+    b.halo.material.opacity = arrived ? .8 : plugged ? .35 : 0;
+    units.forEach(u => { if (u !== a && u !== b) { u.halo.material.opacity = 0; u.port.material.color.set(0x1d232b); } });
+    // light pulse riding the fiber
+    if (head > 0.001 && head < 0.999) {
+      const pt = cable.curve.getPointAt(head);
+      R.pulse.position.copy(pt); R.pulse.material.opacity = 1;
+      R.pulseLight.position.copy(pt); R.pulseLight.intensity = 1.3;
+    } else { R.pulse.material.opacity = 0; R.pulseLight.intensity = arrived ? .7 : 0; if (arrived) R.pulseLight.position.copy(b.port.position).add(V3(0, 0, .3)); }
+    R.dust.rotation.y += dt * .02;
+    // camera: establishing shot -> chase the light along the cable -> settle on the target stack
+    const est = V3(2.1 * SX * far, a.y * .55 + .45, 4.1 * far), estL = V3(LX, a.y * .55 - .15, .2);
+    const hp = cable.curve.getPointAt(Math.max(0, Math.min(1, head - .08)));
+    const la = cable.curve.getPointAt(Math.max(0, Math.min(1, head + .06)));
+    const chase = hp.clone().add(V3(.7 * SX * far, .34, 1.45 * far)), chaseL = la.clone().add(V3(-.1, -.05, 0));
+    const end = V3(1.95 * SX * far, b.y + .42, 3.35 * far), endL = V3(LX, b.y - .12, .25);
+    const k1 = sstep(.3, .44, p), k2 = sstep(.8, .92, p);
+    const want = est.clone().lerp(chase, k1).lerp(end, k2);
+    const wantL = estL.clone().lerp(chaseL, k1).lerp(endL, k2);
+    if (!R.started) { R.camPos.copy(want); R.camLook.copy(wantL); R.started = true; }
+    const damp = 1 - Math.exp(-dt * 7);
+    R.camPos.lerp(want, damp); R.camLook.lerp(wantL, damp);
+    cam.position.copy(R.camPos); cam.lookAt(R.camLook);
+    renderer.render(R.sc, cam);
+  }
+  function rackEnd() {
+    if (!R || !R.cable) return;
+    R.sc.remove(R.cable.mesh); R.cable.geo.dispose(); R.cable.mat.dispose(); R.cable = null;
+    R.pulse.material.opacity = 0; R.pulseLight.intensity = 0;
+  }
+
   return {
-    U,
+    U, rackBegin, rackStep, rackEnd, units: RACK_UNITS,
     tint(a, b) { c1.set(a); c2.set(b); },
     step(dt, speed, boot, glow = 1, dir = 1) {
       U.uSpeed.value = speed; U.uBoot.value = boot; U.uGlow.value = glow;
@@ -1226,23 +1425,22 @@ function loop(now) {
   boot += (bootTarget - boot) * Math.min(1, dt * 2.2);
   if (travel) {
     const p = Math.max(0, Math.min(1, (now - travel.start) / travel.dur));
-    const ramp = p < .72 ? Math.pow(p / .72, 2.4) : 1;
-    speed = ramp;
+    if (p > .4 && !travel.plugged) { travel.plugged = true; Sound.soft(); }
     hudBar.style.width = (Math.min(1, p / .85) * 100) + '%';
     const hops = Math.min(travel.hops, 1 + Math.floor(p / .85 * travel.hops));
     hudHops.textContent = `hop ${String(hops).padStart(2, '0')}/${String(travel.hops).padStart(2, '0')}`;
     hudLat.textContent = (0.08 + p * 0.34 + Math.random() * 0.02).toFixed(2) + ' ms';
     if (p > .8 && !travel.flashed) { travel.flashed = true; travelEl.classList.add('flashing'); }
     if (p > .88 && !travel.jumped) { travel.jumped = true; land(travel.id); }
-    if (p >= 1) { travel = null; body.classList.remove('traveling'); travelEl.classList.remove('flashing'); if (pendingPop) { const n = pendingPop; pendingPop = null; setTimeout(() => go(n, {fromPop:true}), 60); } }
-  } else {
-    speed += (0 - speed) * Math.min(1, dt * 3);
+    if (p >= 1) { travel = null; if (fiber) fiber.rackEnd(); body.classList.remove('traveling'); travelEl.classList.remove('flashing'); if (pendingPop) { const n = pendingPop; pendingPop = null; setTimeout(() => go(n, {fromPop:true}), 60); } }
   }
-  if (travel) dirNow = travel.dir; else if (speed < .04) dirNow = 1;
   scrollBoost *= Math.exp(-dt * 2.6);
-  const eff = Math.max(speed, scrollBoost * .5 + heroProg * .22);
+  const eff = scrollBoost * .5 + heroProg * .22;
   const glow = 1 + heroProg * 1.3 + scrollBoost * .9;
-  if (fiber) fiber.step(dt, eff, boot, travel ? 1 : glow, speed > scrollBoost * .5 ? dirNow : 1);
+  if (fiber) {
+    if (travel) fiber.rackStep(dt, Math.max(0, Math.min(1, (now - travel.start) / travel.dur)));
+    else fiber.step(dt, eff, boot, glow, 1);
+  }
   if (travel || heroVisible || speed > .01 || scrollBoost > .01 || Math.abs(bootTarget - boot) > .01) requestAnimationFrame(loop);
   else running = false;
 }
@@ -1257,7 +1455,7 @@ function land(id) {
     el.querySelectorAll('.rv').forEach(r => r.classList.add('in'));
     el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
     const focusT = el.querySelector('h2, h3'); if (focusT) { focusT.setAttribute('tabindex', '-1'); focusT.focus({preventScroll:true}); }
-    setTimeout(() => arrive(id, travel ? travel.dir : 1), 140);
+    setTimeout(() => arrive(id, 1), 140);
   }
 }
 
@@ -1313,6 +1511,18 @@ const factIo = new IntersectionObserver(es => es.forEach(e => {
 }), {threshold: .6});
 document.querySelectorAll('.fact b').forEach(b => factIo.observe(b));
 
+const UNIT_OF = {top:'top', about:'about', path:'about', events:'events', tracks:'tracks', scout:'scout', join:'join'};
+function currentSection() {
+  if (scrollY < innerHeight * .5) return 'top';
+  const mid = innerHeight * .45; let best = 'top';
+  for (const id of ['about', 'path', 'events', 'tracks', 'scout', 'join']) {
+    const el = document.getElementById(id); if (!el) continue;
+    const r = el.getBoundingClientRect();
+    if (r.top <= mid && r.bottom > mid) best = id;
+  }
+  if (best === 'top' && scrollY > innerHeight) best = 'join';
+  return best;
+}
 function pushRoute(id) {
   const h = ROUTE[id] ?? id;
   const url = h ? '#' + h : location.pathname + location.search;
@@ -1330,18 +1540,25 @@ function go(id, opts = {}) {
     return;
   }
   const d = DEST[id];
-  const targetY = id === 'top' ? 0 : document.getElementById(id).getBoundingClientRect().top + scrollY - 72;
-  const dir = targetY >= scrollY - 8 ? 1 : -1;
+  const fromU = UNIT_OF[currentSection()] || 'top', toU = UNIT_OF[id] || 'top';
+  if (fromU === toU) {
+    // already on this stack: just glide to the section start
+    if (id === 'top') scrollTo({top:0, behavior:'smooth'}); else document.getElementById(id).scrollIntoView({behavior:'smooth'});
+    if (id !== 'top') setTimeout(() => arrive(id, 1), 450);
+    return;
+  }
+  const units = fiber.units, ia = units.findIndex(u => u.id === fromU), ib = units.findIndex(u => u.id === toU);
   fiber.tint(d.c[0], d.c[1]);
-  $('#hudDir').textContent = dir > 0 ? 'Forward ▸▸' : '◂◂ Reverse';
-  travelEl.classList.toggle('rev', dir < 0);
+  fiber.rackBegin(fromU, toU, d.c[0], d.c[1]);
+  $('#hudDir').textContent = 'Patching fiber';
+  travelEl.classList.remove('rev');
   travelEl.style.setProperty('--hc', d.css);
   hudDest.textContent = d.label;
-  hudPath.textContent = 'campus-1 → ' + d.path;
+  hudPath.textContent = `Port ${String(ia + 1).padStart(2, '0')} ${units[ia].label} → Port ${String(ib + 1).padStart(2, '0')} ${units[ib].label}`;
   hudBar.style.width = '0%';
-  travel = {id, dir, start: performance.now(), dur: 2300, hops: 5 + Math.floor(Math.random() * 4), flashed:false, jumped:false};
+  travel = {id, dir: 1, start: performance.now(), dur: 2700, hops: 2 + Math.abs(ib - ia), flashed:false, jumped:false, plugged:false};
   body.classList.add('traveling');
-  Sound.travel(travel.dur / 1000, dir);
+  Sound.travel(travel.dur / 1000, 1);
   wake();
 }
 
