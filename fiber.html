@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AWS@MVJCE — Fiber edition</title>
+<meta name="description" content="AWS Student Builder Group at MVJCE. Learn cloud, build real projects, and find your people. No experience needed.">
+<meta name="theme-color" content="#0b0f14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0f14; --ink-2:#111821; --ink-3:#18212d;
+  --line:rgba(242,239,233,.09); --line-2:rgba(242,239,233,.16);
+  --text:#f2efe9; --muted:#8d96a3; --dim:#5c6672;
+  --orange:#ff9900; --orange-2:#ffb547; --orange-ink:#1a0f00;
+  --cyan:#7fe3ec;
+  --paper:#f3efe6; --paper-ink:#14181d; --paper-muted:#5f6670; --paper-line:#d9d3c6;
+  --display:"Archivo", "Arial Narrow", system-ui, sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --pad:clamp(20px,4.5vw,64px);
+  --max:1360px;
+  --ease:cubic-bezier(.2,.7,.1,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--display);font-stretch:100%;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+img,svg,canvas,video{display:block}
+::selection{background:var(--orange);color:var(--orange-ink)}
+:focus-visible{outline:2px solid var(--orange);outline-offset:3px;border-radius:4px}
+.skip{position:absolute;left:-999px;top:12px;z-index:100;background:var(--orange);color:var(--orange-ink);padding:10px 16px;border-radius:8px;font-weight:700}
+.skip:focus{left:12px}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--pad)}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.kicker{display:flex;align-items:center;gap:12px;color:var(--muted)}
+.kicker b{color:var(--orange);font-weight:500}
+.kicker::after{content:"";height:1px;flex:0 0 48px;background:var(--line-2)}
+
+/* ---------- Header ---------- */
+.hdr{position:fixed;inset:0 0 auto;z-index:50;transition:background .4s,border-color .4s,backdrop-filter .4s;border-bottom:1px solid transparent}
+.hdr.solid{background:rgba(11,15,20,.78);backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3);border-color:var(--line)}
+.hdr .wrap{display:flex;align-items:center;justify-content:space-between;height:72px;gap:24px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-stretch:115%;letter-spacing:-.01em;font-size:17px}
+.brand-mark{width:34px;height:34px;border-radius:9px;background:var(--orange);color:var(--orange-ink);display:grid;place-items:center;font-size:15px;font-weight:900;font-stretch:125%}
+.brand small{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.08em;margin-left:2px}
+.nav{display:flex;align-items:center;gap:4px}
+.nav a{padding:9px 14px;border-radius:999px;font-size:14.5px;color:#c9ced5;transition:color .2s,background .2s}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.nav a.on{color:var(--text)}
+.btn{display:inline-flex;align-items:center;gap:10px;height:48px;padding:0 22px;border-radius:999px;font-weight:700;font-size:15px;transition:transform .25s var(--ease),background .25s,color .25s,box-shadow .25s;white-space:nowrap}
+.btn .arr{transition:transform .25s var(--ease)}
+.btn:hover .arr{transform:translate(3px,-3px)}
+.btn-primary{background:var(--orange);color:var(--orange-ink);box-shadow:0 0 0 0 rgba(255,153,0,.0)}
+.btn-primary:hover{background:var(--orange-2);box-shadow:0 10px 40px -10px rgba(255,153,0,.6)}
+.btn-ghost{border:1px solid var(--line-2);color:var(--text)}
+.btn-ghost:hover{border-color:var(--text)}
+.btn-sm{height:40px;padding:0 18px;font-size:14px}
+.menu-btn{display:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);place-items:center}
+.menu-btn span{display:block;width:18px;height:1.5px;background:var(--text);position:relative}
+.menu-btn span::before,.menu-btn span::after{content:"";position:absolute;left:0;width:18px;height:1.5px;background:var(--text);transition:transform .3s}
+.menu-btn span::before{top:-6px}.menu-btn span::after{top:6px}
+.menu-open .menu-btn span{background:transparent}
+.menu-open .menu-btn span::before{transform:translateY(6px) rotate(45deg)}
+.menu-open .menu-btn span::after{transform:translateY(-6px) rotate(-45deg)}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:flex-end;padding:120px 0 0;overflow:hidden;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-2}
+.hero-bg canvas,.hero-film{position:absolute;inset:0;width:100%;height:100%}
+.hero-film{object-fit:cover;opacity:0;transition:opacity 1.6s}
+.hero-film.ready{opacity:.55}
+.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(1200px 600px at 78% 30%,rgba(255,153,0,.13),transparent 60%),
+             linear-gradient(180deg,rgba(11,15,20,.2) 0%,rgba(11,15,20,0) 40%,rgba(11,15,20,.85) 88%,var(--ink) 100%)}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:auto;padding-top:28px}
+.status{display:inline-flex;align-items:center;gap:10px;padding:8px 14px 8px 12px;border:1px solid var(--line-2);border-radius:999px;background:rgba(11,15,20,.5);backdrop-filter:blur(8px)}
+.status i{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 0 rgba(255,153,0,.7);animation:ping 2.2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,153,0,.6)}70%{box-shadow:0 0 0 10px rgba(255,153,0,0)}100%{box-shadow:0 0 0 0 rgba(255,153,0,0)}}
+.coords{text-align:right;color:var(--dim);line-height:1.9}
+.hero h1{font-weight:850;font-stretch:125%;line-height:.86;letter-spacing:-.045em;font-size:clamp(32px,min(9.6vw,19vh),176px);text-transform:uppercase;margin:32px 0 0}
+.hero h1 .ln{display:block;overflow:hidden;padding-bottom:.04em}
+.hero h1 .ln > span{display:inline-block;transform:translateY(105%);animation:rise 1.1s var(--ease) forwards}
+.hero h1 .ln:nth-child(2) > span{animation-delay:.08s}
+.hero h1 .ln:nth-child(3) > span{animation-delay:.16s}
+@keyframes rise{to{transform:none}}
+.hero h1 .thin{font-weight:300;font-stretch:62%;letter-spacing:-.02em;color:var(--muted)}
+.hero h1 .o{color:var(--orange)}
+.hero-foot{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(24px,5vw,80px);align-items:end;padding:32px 0 48px;border-top:1px solid var(--line);margin-top:32px}
+.lede{font-size:clamp(18px,1.6vw,22px);line-height:1.45;color:#cfd4da;max-width:34ch}
+.lede strong{color:var(--text);font-weight:700}
+.ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.console{border:1px solid var(--line-2);border-radius:16px;background:rgba(14,19,26,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);overflow:hidden;box-shadow:0 40px 80px -40px rgba(0,0,0,.8)}
+.console-bar{display:flex;align-items:center;gap:7px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.console-bar i{width:10px;height:10px;border-radius:50%;background:#2a333f}
+.console-bar span{margin-left:auto;color:var(--dim);font-size:11px}
+.console pre{font-family:var(--mono);font-size:13.5px;line-height:1.85;padding:18px 20px 22px;color:#c5ccd4;min-height:210px;white-space:pre-wrap}
+.console .p{color:var(--orange)} .console .ok{color:#7ee2a1} .console .c{color:var(--dim)} .console .k{color:var(--cyan)}
+.caret{display:inline-block;width:8px;height:16px;background:var(--orange);vertical-align:-3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- Ticker ---------- */
+.ticker{border-block:1px solid var(--line);overflow:hidden;padding:22px 0;background:var(--ink)}
+.ticker-track{display:flex;gap:48px;width:max-content;animation:tick 40s linear infinite}
+.ticker:hover .ticker-track{animation-play-state:paused}
+.ticker span{font-weight:800;font-stretch:125%;text-transform:uppercase;font-size:clamp(28px,4vw,54px);letter-spacing:-.03em;line-height:1;color:transparent;-webkit-text-stroke:1px rgba(242,239,233,.28);display:flex;align-items:center;gap:48px}
+.ticker span::after{content:"✦";-webkit-text-stroke:0;color:var(--orange);font-size:.45em}
+.ticker span:nth-child(3n+1){color:var(--text);-webkit-text-stroke:0}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* ---------- Sections ---------- */
+section{position:relative}
+.sec{padding:clamp(96px,13vw,180px) 0}
+.sec-head{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(24px,5vw,80px);align-items:end;margin-bottom:clamp(48px,7vw,96px)}
+.h2{font-weight:820;font-stretch:118%;font-size:clamp(40px,5.9vw,94px);line-height:.92;letter-spacing:-.04em;margin-top:22px;text-wrap:balance}
+.h2 em{font-style:normal;color:var(--orange)}
+.h2 .thin{font-weight:300;font-stretch:70%;letter-spacing:-.02em}
+.sec-head > p{color:var(--muted);font-size:clamp(17px,1.4vw,19px);max-width:44ch;justify-self:end}
+
+/* Pillars */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.pillar{position:relative;padding:clamp(28px,3vw,44px);min-height:420px;display:flex;flex-direction:column;border-right:1px solid var(--line);background:var(--ink);transition:background .5s var(--ease);overflow:hidden}
+.pillar:last-child{border-right:0}
+.pillar::before{content:"";position:absolute;inset:0;background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),rgba(255,153,0,.12),transparent 60%);opacity:0;transition:opacity .4s}
+.pillar:hover::before{opacity:1}
+.pillar .num{font-weight:900;font-stretch:125%;font-size:clamp(90px,10vw,150px);line-height:.8;letter-spacing:-.06em;color:transparent;-webkit-text-stroke:1px var(--line-2);transition:-webkit-text-stroke-color .4s,color .4s}
+.pillar:hover .num{-webkit-text-stroke-color:var(--orange)}
+.pillar h3{font-weight:800;font-stretch:115%;font-size:clamp(28px,2.6vw,38px);letter-spacing:-.03em;margin-top:auto;line-height:1}
+.pillar p{color:var(--muted);margin-top:14px;max-width:32ch;min-height:6.3em}
+.pillar .glyph{position:absolute;top:clamp(28px,3vw,44px);right:clamp(28px,3vw,44px);width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);display:grid;place-items:center;color:var(--orange);font-family:var(--mono);font-size:18px}
+.zero{margin-top:20px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:24px clamp(24px,3vw,40px);border:1px solid var(--line);border-radius:18px;background:linear-gradient(90deg,rgba(255,153,0,.10),transparent 60%)}
+.zero b{font-weight:800;font-stretch:112%;font-size:clamp(20px,2vw,26px);letter-spacing:-.02em}
+.zero span{color:var(--muted)}
+
+/* Facts */
+.facts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:clamp(64px,8vw,110px);border-top:1px solid var(--line)}
+.fact{padding:28px 24px 0 0}
+.fact b{display:block;font-weight:850;font-stretch:125%;font-size:clamp(46px,5.4vw,84px);letter-spacing:-.05em;line-height:1}
+.fact b sup{font-size:.4em;color:var(--orange);vertical-align:top;margin-left:4px;letter-spacing:0}
+.fact span{display:block;color:var(--muted);margin-top:10px;font-size:15px;max-width:22ch}
+
+/* ---------- Path (paper) ---------- */
+.paper{background:var(--paper);color:var(--paper-ink)}
+.paper .kicker{color:var(--paper-muted)}
+.paper .kicker b{color:#c76a00}
+.paper .kicker::after{background:var(--paper-line)}
+.paper .sec-head > p{color:var(--paper-muted)}
+.paper .h2 em{color:#e07f00}
+.flow{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.flow-line{position:absolute;left:0;right:0;top:44px;height:2px;background:var(--paper-line);z-index:0}
+.flow-line i{position:absolute;inset:0;transform-origin:left;transform:scaleX(var(--p,0));background:linear-gradient(90deg,#ff9900,#e07f00)}
+.step{position:relative;z-index:1}
+.node{width:88px;height:88px;border-radius:24px;background:var(--paper);border:1.5px solid var(--paper-ink);display:grid;place-items:center;font-family:var(--mono);font-size:13px;font-weight:500;transition:background .5s,color .5s,border-color .5s,transform .5s var(--ease)}
+.step.lit .node{background:var(--paper-ink);color:var(--orange);transform:rotate(-6deg)}
+.step h3{font-weight:800;font-stretch:115%;font-size:clamp(26px,2.4vw,34px);letter-spacing:-.03em;line-height:1;margin-top:32px}
+.step .tag{margin-top:10px;color:#c76a00}
+.step p{color:var(--paper-muted);margin-top:14px;max-width:28ch}
+.quote{margin-top:clamp(80px,10vw,140px);display:grid;grid-template-columns:auto 1fr;gap:clamp(20px,4vw,56px);align-items:start;border-top:1.5px solid var(--paper-ink);padding-top:40px}
+.quote blockquote{font-weight:300;font-stretch:80%;font-size:clamp(28px,3.6vw,52px);line-height:1.08;letter-spacing:-.025em;text-wrap:balance}
+.quote blockquote strong{font-weight:800;font-stretch:112%}
+
+/* ---------- Events ---------- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px}
+.chip{height:38px;padding:0 16px;border-radius:999px;border:1px solid var(--line-2);font-size:14px;color:#c9ced5;transition:all .2s}
+.chip:hover{border-color:var(--text);color:var(--text)}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--ink);border-color:var(--text)}
+.log{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:72px 1.4fr 1fr 200px;align-items:center;gap:24px;padding:28px 8px;border-bottom:1px solid var(--line);position:relative;transition:padding .35s var(--ease),background .35s}
+.row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--orange);transform:scaleY(0);transition:transform .35s var(--ease)}
+.row:hover{background:linear-gradient(90deg,rgba(255,153,0,.06),transparent 70%);padding-left:24px}
+.row:hover::before{transform:scaleY(1)}
+.row .ic{width:52px;height:52px;border-radius:14px;border:1px solid var(--line-2);display:grid;place-items:center;font-family:var(--mono);font-size:16px;color:var(--orange)}
+.row h3{font-weight:780;font-stretch:112%;font-size:clamp(21px,2vw,28px);letter-spacing:-.025em;line-height:1.1}
+.row .type{color:var(--muted);margin-top:6px}
+.row p{color:var(--muted);font-size:15.5px}
+.row .when{justify-self:start;padding:6px 12px;border-radius:999px;border:1px solid var(--line-2);color:#c9ced5;font-size:11px;white-space:nowrap}
+.row .when.up{border-color:rgba(255,153,0,.5);color:var(--orange)}
+.row .go{color:var(--dim);font-size:20px;transition:color .2s,transform .3s var(--ease)}
+.row:hover .go{color:var(--orange);transform:translate(3px,-3px)}
+.empty{padding:48px 8px;color:var(--muted)}
+.log-note{margin-top:24px;color:var(--dim)}
+
+/* ---------- Tracks ---------- */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:minmax(260px,auto);gap:16px}
+.track{position:relative;border:1px solid var(--line);border-radius:22px;padding:32px;background:var(--ink-2);overflow:hidden;display:flex;flex-direction:column;transition:border-color .4s,transform .5s var(--ease)}
+.track:hover{border-color:rgba(255,153,0,.45);transform:translateY(-4px)}
+.track::after{content:"";position:absolute;inset:0;background:radial-gradient(500px circle at var(--mx,50%) var(--my,0%),rgba(255,153,0,.10),transparent 55%);opacity:0;transition:opacity .4s;pointer-events:none}
+.track:hover::after{opacity:1}
+.track:nth-child(1){grid-column:span 4;grid-row:span 2}
+.track:nth-child(2){grid-column:span 2;grid-row:span 2}
+.track:nth-child(3){grid-column:span 3}
+.track:nth-child(4){grid-column:span 3}
+.track:nth-child(3),.track:nth-child(4){min-height:300px}
+.track .idx{color:var(--dim)}
+.track h3{font-weight:820;font-stretch:118%;font-size:clamp(28px,2.8vw,44px);letter-spacing:-.035em;line-height:.98;margin-top:auto;max-width:12ch}
+.track:nth-child(1) h3{font-size:clamp(40px,4.6vw,72px)}
+.track p{color:var(--muted);margin-top:14px;max-width:40ch}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px}
+.tags span{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--line);color:#c9ced5}
+.arch{position:absolute;right:28px;top:28px;opacity:.9}
+.track:nth-child(1) .arch{width:min(46%,380px);height:auto}
+
+/* ---------- Scout ---------- */
+.scout{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:clamp(24px,4vw,64px);align-items:stretch}
+.scout-intro{display:flex;flex-direction:column}
+.bot{width:96px;height:96px;border-radius:26px;background:var(--ink-3);border:1px solid var(--line-2);display:grid;place-items:center;margin-top:36px}
+.bot svg{width:60px;height:60px}
+.bot .eyes{animation:look 6s infinite}
+@keyframes look{0%,40%,100%{transform:none}45%,60%{transform:translateX(2px)}65%,80%{transform:translateX(-2px)}}
+.qs{display:flex;flex-direction:column;gap:10px;margin-top:36px}
+.q{display:flex;justify-content:space-between;align-items:center;gap:16px;text-align:left;padding:18px 20px;border-radius:14px;border:1px solid var(--line);background:var(--ink-2);font-size:16.5px;font-weight:600;transition:border-color .25s,background .25s,transform .3s var(--ease)}
+.q:hover{border-color:var(--line-2);transform:translateX(4px)}
+.q[aria-pressed="true"]{border-color:var(--orange);background:linear-gradient(90deg,rgba(255,153,0,.12),var(--ink-2))}
+.q span{color:var(--dim);font-family:var(--mono);font-size:14px}
+.q[aria-pressed="true"] span{color:var(--orange)}
+.answer{position:relative;border:1px solid var(--line-2);border-radius:26px;padding:clamp(28px,4vw,56px);background:
+  radial-gradient(600px 300px at 100% 0%,rgba(127,227,236,.08),transparent 60%),
+  radial-gradient(600px 300px at 0% 100%,rgba(255,153,0,.10),transparent 60%),var(--ink-2);display:flex;flex-direction:column;min-height:460px}
+.answer .label{color:var(--cyan)}
+.answer h3{font-weight:820;font-stretch:118%;font-size:clamp(34px,4vw,60px);letter-spacing:-.04em;line-height:.98;margin-top:22px;text-wrap:balance}
+.answer p{color:#c5ccd4;font-size:clamp(17px,1.4vw,20px);margin-top:22px;max-width:46ch;min-height:4.5em}
+.answer .btn{margin-top:auto;align-self:flex-start}
+
+/* ---------- Join ---------- */
+.join{padding:clamp(110px,14vw,200px) 0 clamp(80px,10vw,140px);text-align:center;overflow:hidden;position:relative}
+.join::before{content:"";position:absolute;left:50%;top:58%;width:1200px;height:1200px;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(255,153,0,.20),transparent 60%);pointer-events:none}
+.join .mono{color:var(--muted)}
+.join h2{position:relative;font-weight:870;font-stretch:125%;font-size:clamp(52px,11vw,180px);line-height:.86;letter-spacing:-.055em;text-transform:uppercase;margin-top:28px}
+.join h2 .o{color:var(--orange)}
+.join p{position:relative;color:#c5ccd4;font-size:clamp(18px,1.6vw,22px);max-width:40ch;margin:32px auto 0}
+.join .ctas{justify-content:center;position:relative;margin-top:40px}
+
+/* ---------- Footer ---------- */
+footer{border-top:1px solid var(--line);padding:48px 0 40px}
+.foot{display:flex;justify-content:space-between;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.foot nav{display:flex;gap:28px;flex-wrap:wrap;color:#c9ced5;font-size:15px}
+.foot nav a:hover{color:var(--orange)}
+.legal{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-top:48px;color:var(--dim)}
+
+/* ---------- Reveal ---------- */
+.rv{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+.rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1080px){
+  .row{grid-template-columns:60px 1fr 200px}
+  .row p{display:none}
+  .bento{grid-template-columns:repeat(2,1fr)}
+  .track:nth-child(n){grid-column:span 2;grid-row:auto}
+  .track:nth-child(3),.track:nth-child(4){grid-column:span 1}
+  .track:nth-child(1){min-height:420px}
+}
+@media (max-width:900px){
+  .nav,.hdr .btn-sm{display:none}
+  .menu-btn{display:grid}
+  .menu-open .nav{display:flex;position:fixed;top:72px;left:0;right:0;flex-direction:column;align-items:stretch;padding:12px var(--pad) 28px;background:rgba(11,15,20,.97);border-bottom:1px solid var(--line);gap:2px}
+  .menu-open .nav a{font-size:24px;font-weight:700;font-stretch:115%;padding:14px 0;border-radius:0;border-bottom:1px solid var(--line)}
+  .menu-open .hdr{background:rgba(11,15,20,.97)}
+  .hero-foot,.sec-head,.scout{grid-template-columns:1fr}
+  .sec-head > p{justify-self:start}
+  .pillars{grid-template-columns:1fr}
+  .pillar{border-right:0;border-bottom:1px solid var(--line);min-height:300px}
+  .pillar:last-child{border-bottom:0}
+  .facts{grid-template-columns:repeat(2,1fr);row-gap:28px}
+  .flow{grid-template-columns:1fr 1fr;row-gap:56px}
+  .flow-line{display:none}
+  .quote{grid-template-columns:1fr}
+  .coords{display:none}
+}
+@media (max-width:600px){
+  body{font-size:16px}
+  .hero{padding-top:96px}
+  .hero-top{padding-top:8px}
+  .hero h1{margin-top:28px;font-size:10.2vw}
+  .hero h1 .thin{display:block}
+  .console pre{font-size:12.5px;min-height:190px}
+  .row{grid-template-columns:48px 1fr;gap:16px}
+  .row .ic{width:44px;height:44px}
+  .row .when{grid-column:2;margin-top:-8px}
+  .row .go{display:none}
+  .bento{grid-template-columns:1fr}
+  .track:nth-child(n){grid-column:auto}
+  .track:nth-child(1) .arch{width:52%}
+  .track:nth-child(1) h3{font-size:clamp(30px,9.4vw,44px)}
+  .track{padding:26px}
+  .flow{grid-template-columns:1fr}
+  .btn{height:52px}
+  .ctas .btn{flex:1 1 100%;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+  .hero h1 .ln > span{transform:none}
+}
+
+/* ================= FIBER EDITION ================= */
+#fiber{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;opacity:0;transition:opacity .9s var(--ease);pointer-events:none}
+body.lit #fiber{opacity:1}
+body.lit.away #fiber{opacity:0}
+body.traveling #fiber{opacity:1!important;z-index:70;transition:opacity .25s}
+main,footer{position:relative;z-index:1}
+.hdr{z-index:50}
+.sec,.join,footer,.ticker{background-color:var(--ink)}
+main > section{scroll-margin-top:72px}
+.sec.paper{background-color:var(--paper)}
+.hero{background:transparent;justify-content:center;padding:96px 0 40px}
+.hero::after{background:
+  radial-gradient(closest-side at 50% 52%,rgba(11,15,20,0) 0%,rgba(11,15,20,.35) 55%,rgba(11,15,20,.9) 100%),
+  linear-gradient(180deg,rgba(11,15,20,.55) 0%,rgba(11,15,20,0) 30%,rgba(11,15,20,0) 70%,var(--ink) 100%)}
+.hero h1{font-size:clamp(32px,min(8.6vw,15vh),156px);margin-top:28px;text-shadow:0 4px 60px rgba(0,0,0,.6)}
+.hero h1 .ln > span{animation:none}
+body.booted .hero h1 .ln > span{animation:rise 1.1s var(--ease) forwards}
+body.booted .hero h1 .ln:nth-child(2) > span{animation-delay:.1s}
+.hub{width:100%;opacity:0;transition:opacity .8s var(--ease)}
+body.booted .hub{opacity:1}
+.hub-foot{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,2fr);gap:clamp(24px,4vw,64px);align-items:end;margin-top:36px;padding-top:28px;border-top:1px solid var(--line)}
+.ports{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.port{position:relative;text-align:left;padding:18px 18px 20px;border-radius:16px;border:1px solid var(--line-2);background:rgba(13,18,25,.62);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:4px;min-height:150px;overflow:hidden;transition:border-color .3s,transform .4s var(--ease),background .3s;opacity:0;transform:translateY(16px)}
+body.booted .port{opacity:1;transform:none;transition:opacity .7s var(--ease),transform .7s var(--ease),border-color .3s,background .3s}
+body.booted .port:nth-child(2){transition-delay:.08s,.08s,0s,0s}
+body.booted .port:nth-child(3){transition-delay:.16s,.16s,0s,0s}
+body.booted .port:nth-child(4){transition-delay:.24s,.24s,0s,0s}
+.port::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--pc),transparent);transform:translateX(-100%);transition:transform .6s var(--ease)}
+.port:hover,.port:focus-visible{border-color:var(--pc);background:rgba(18,24,33,.8);transform:translateY(-4px)}
+.port:hover::after,.port:focus-visible::after{transform:translateX(0);animation:sweep 1.2s linear infinite}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.port .led{width:8px;height:8px;border-radius:50%;background:#2a333f;margin-bottom:14px;transition:background .3s,box-shadow .3s}
+body.booted .port .led{background:var(--pc);box-shadow:0 0 10px var(--pc);animation:ledblink 3s infinite}
+.port:nth-child(2) .led{animation-delay:.7s!important}.port:nth-child(3) .led{animation-delay:1.4s!important}.port:nth-child(4) .led{animation-delay:2.1s!important}
+@keyframes ledblink{0%,92%,100%{opacity:1}94%{opacity:.25}96%{opacity:1}97%{opacity:.3}}
+.port .pn{color:var(--dim);font-size:10.5px}
+.port b{font-weight:800;font-stretch:112%;font-size:clamp(18px,1.55vw,22px);letter-spacing:-.02em;line-height:1.05;margin-top:auto}
+.port small{color:var(--muted);font-size:13.5px}
+.port .jack{position:absolute;right:16px;top:16px;width:30px;height:20px;border-radius:4px;border:1px solid var(--line-2);background:linear-gradient(180deg,transparent 55%,rgba(255,255,255,.06) 55%)}
+.port .jack::before{content:"";position:absolute;left:6px;right:6px;top:5px;height:3px;border-radius:2px;background:repeating-linear-gradient(90deg,var(--dim) 0 2px,transparent 2px 4px)}
+.port:hover .jack::before{background:repeating-linear-gradient(90deg,var(--pc) 0 2px,transparent 2px 4px)}
+.scroll-hint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);color:var(--dim);opacity:0;transition:opacity 1s 1s}
+body.booted .scroll-hint{opacity:1}
+
+/* boot */
+.boot{position:absolute;inset:0;z-index:5;display:grid;place-items:center;padding:24px;transition:opacity .7s var(--ease),visibility .7s}
+.boot.done{opacity:0;visibility:hidden}
+.boot-inner{width:min(560px,100%);border:1px solid var(--line-2);border-radius:16px;background:rgba(10,14,19,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:20px 22px 18px;box-shadow:0 40px 120px -30px rgba(0,0,0,.9)}
+.boot-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.boot-head span{display:flex;align-items:center;gap:10px}
+.boot-led{width:7px;height:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange);animation:blink .5s steps(1) infinite}
+.boot-head button{color:var(--text);font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:6px 10px;border:1px solid var(--line-2);border-radius:999px}
+.boot-head button:hover{border-color:var(--orange);color:var(--orange)}
+#bootLog{font-family:var(--mono);font-size:13px;line-height:1.95;color:#b9c1cb;min-height:200px;padding:14px 0 6px;white-space:pre-wrap}
+#bootLog .ok{color:#7ee2a1}#bootLog .run{color:var(--orange)}#bootLog .k{color:var(--cyan)}#bootLog .dim{color:var(--dim)}
+.boot-bar{height:3px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:6px}
+.boot-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--orange),var(--orange-2),var(--cyan));box-shadow:0 0 12px var(--orange)}
+.boot-foot{display:flex;justify-content:space-between;color:var(--dim);font-size:11px;margin-top:10px}
+.boot-foot #bootPct{color:var(--orange)}
+
+/* travel HUD */
+.travel{position:fixed;inset:0;z-index:71;pointer-events:none;opacity:0;transition:opacity .3s}
+body.traveling .travel{opacity:1}
+.hud{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:min(520px,86vw)}
+.hud::before{content:"";position:absolute;left:50%;top:50%;width:150%;height:260%;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(11,15,20,.82),rgba(11,15,20,0));z-index:-1}
+.hud .mono{color:var(--muted);font-size:11px}
+.hud h2{font-weight:850;font-stretch:125%;text-transform:uppercase;letter-spacing:-.04em;font-size:clamp(34px,6vw,84px);line-height:.95;margin-top:14px;color:var(--text);text-shadow:0 0 40px var(--hc,rgba(255,153,0,.6))}
+.hud-bar{height:2px;background:rgba(255,255,255,.1);margin-top:26px;overflow:hidden;border-radius:2px}
+.hud-bar i{display:block;height:100%;width:0;background:var(--hc,#ff9900);box-shadow:0 0 14px var(--hc,#ff9900)}
+.hud-meta{display:flex;justify-content:space-between;margin-top:12px}
+.hud-corner{position:absolute;color:var(--dim);font-size:10.5px}
+.hud-corner.tl{left:var(--pad);top:24px}.hud-corner.br{right:var(--pad);bottom:24px;text-align:right}
+.flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,#fff 0%,var(--hc,#ff9900) 22%,rgba(11,15,20,0) 62%);opacity:0;transform:scale(.4)}
+.travel.flashing .flash{animation:flash .55s var(--ease) forwards}
+@keyframes flash{0%{opacity:0;transform:scale(.3)}45%{opacity:1;transform:scale(1.6)}100%{opacity:0;transform:scale(2.4)}}
+.travel.flashing .hud{opacity:0;transition:opacity .2s}
+.landed{animation:land .9s var(--ease)}
+@keyframes land{from{filter:brightness(1.8) saturate(1.4)}to{filter:none}}
+
+/* back to ports */
+.back{position:fixed;right:20px;bottom:20px;z-index:40;display:flex;align-items:center;gap:10px;height:44px;padding:0 16px 0 12px;border-radius:999px;border:1px solid var(--line-2);background:rgba(11,15,20,.85);backdrop-filter:blur(10px);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .4s,transform .4s var(--ease),border-color .2s}
+.back i{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--orange)}
+body.away .back{opacity:1;transform:none;pointer-events:auto}
+.back:hover{border-color:var(--orange)}
+
+/* team */
+.team-head{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap;margin-top:clamp(80px,10vw,140px);padding-bottom:28px;border-bottom:1px solid var(--line)}
+.team-head h3{font-weight:820;font-stretch:118%;font-size:clamp(32px,4vw,58px);letter-spacing:-.04em;line-height:.95;margin-top:16px}
+.team-head h3 em{font-style:normal;color:var(--orange)}
+.team-head p{color:var(--muted);max-width:40ch}
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px}
+.member{border:1px solid var(--line);border-radius:20px;padding:24px;background:var(--ink-2);display:flex;flex-direction:column;min-height:260px;transition:border-color .3s,transform .4s var(--ease)}
+.member:hover{border-color:rgba(255,153,0,.45);transform:translateY(-4px)}
+.avatar{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;font-weight:850;font-stretch:125%;font-size:22px;color:var(--orange-ink);background:linear-gradient(135deg,var(--orange),var(--orange-2))}
+.member.open .avatar{background:transparent;border:1.5px dashed var(--line-2);color:var(--muted)}
+.member .role{margin-top:auto;color:var(--orange)}
+.member b{display:block;font-weight:780;font-stretch:112%;font-size:22px;letter-spacing:-.02em;margin-top:8px;line-height:1.1}
+.member span.note{color:var(--muted);font-size:14.5px;margin-top:6px}
+
+@media (max-width:1080px){.ports{grid-template-columns:repeat(2,1fr)}.team{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.hub-foot{grid-template-columns:1fr}}
+@media (max-width:600px){
+  .hero{padding:88px 0 56px}
+  .hero h1{font-size:10.2vw}
+  .port{min-height:124px;padding:14px}
+  .port .jack{display:none}
+  #bootLog{font-size:11.5px;min-height:180px}
+  .team{grid-template-columns:1fr}
+  .member{min-height:0;flex-direction:row;align-items:center;gap:18px}
+  .member .role{margin-top:0}
+  .back span{display:none}
+  .back{padding:0 14px}
+}
+@media (prefers-reduced-motion:reduce){.hub,.port{opacity:1!important;transform:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<canvas id="fiber" aria-hidden="true"></canvas>
+<div class="travel" id="travel" aria-hidden="true">
+  <span class="hud-corner tl mono" id="hudPath">campus-1 → /</span>
+  <div class="hud">
+    <p class="mono">Routing packet via fiber</p>
+    <h2 id="hudDest">Builds</h2>
+    <div class="hud-bar"><i id="hudBar"></i></div>
+    <div class="hud-meta mono"><span id="hudHops">hop 01/06</span><span id="hudLat">0.08 ms</span></div>
+  </div>
+  <span class="hud-corner br mono">λ 1550 nm · single-mode<br>4 lanes · up</span>
+  <div class="flash"></div>
+</div>
+<a class="back" href="#top" aria-label="Back to ports"><i></i><span>Back to ports</span></a>
+
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="AWS@MVJCE home">
+      <span class="brand-mark" aria-hidden="true">A</span>
+      <span>AWS@MVJCE <small>SBG</small></span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#about">About &amp; team</a>
+      <a href="#tracks">Builds</a>
+      <a href="#events">Events</a>
+      <a href="#scout">FAQ</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#join" data-join>I want in <span class="arr" aria-hidden="true">↗</span></a>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="nav"><span></span></button>
+  </div>
+</header>
+
+<main id="main">
+<!-- ================= HERO: boot + ports ================= -->
+<section class="hero fx" id="top" aria-label="Introduction">
+  <div class="boot" id="boot" role="status" aria-live="polite">
+    <div class="boot-inner">
+      <div class="boot-head mono">
+        <span><i class="boot-led"></i>AWS@MVJCE · node campus-1</span>
+        <button type="button" id="skipBoot">Skip ↗</button>
+      </div>
+      <pre id="bootLog"></pre>
+      <div class="boot-bar"><i id="bootBar"></i></div>
+      <div class="boot-foot mono"><span id="bootPct">000%</span><span id="bootStage">power on</span></div>
+    </div>
+  </div>
+
+  <div class="wrap hub" id="hub">
+    <div class="hero-top">
+      <span class="status mono"><i></i><span id="statusText">Next session · Date to be announced</span></span>
+      <div class="coords mono">MVJCE / Bengaluru<br>Link · 4 lanes · up<br>Region · campus-1</div>
+    </div>
+    <h1 aria-label="Build beyond the classroom.">
+      <span class="ln"><span>Build <span class="thin">beyond the</span></span></span>
+      <span class="ln"><span>Classroom<span class="o">.</span></span></span>
+    </h1>
+    <div class="hub-foot">
+      <p class="lede"><strong>The AWS Student Builder Group at MVJCE.</strong> Pick a port — we’ll route you there by fiber.</p>
+      <div class="ports" role="group" aria-label="Choose a destination">
+        <button class="port" type="button" data-go="about" style="--pc:#ff9900"><span class="led"></span><span class="pn mono">Port 01</span><b>About &amp; team</b><small>Who we are</small><span class="jack" aria-hidden="true"></span></button>
+        <button class="port" type="button" data-go="tracks" style="--pc:#ffb547"><span class="led"></span><span class="pn mono">Port 02</span><b>Builds</b><small>What we make</small><span class="jack" aria-hidden="true"></span></button>
+        <button class="port" type="button" data-go="events" style="--pc:#7fe3ec"><span class="led"></span><span class="pn mono">Port 03</span><b>Upcoming events</b><small>When we meet</small><span class="jack" aria-hidden="true"></span></button>
+        <button class="port" type="button" data-go="scout" style="--pc:#c9f6fa"><span class="led"></span><span class="pn mono">Port 04</span><b>FAQ</b><small>Ask Scout</small><span class="jack" aria-hidden="true"></span></button>
+      </div>
+    </div>
+  </div>
+  <p class="scroll-hint mono" aria-hidden="true">or scroll ↓</p>
+</section>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="ticker"></div>
+</div>
+
+<!-- ================= ABOUT ================= -->
+<section class="sec" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="kicker mono rv"><b>01</b> What brings us together</p>
+        <h2 class="h2 rv d1">Make the cloud feel <em>within reach.</em></h2>
+      </div>
+      <p class="rv d2">AWSSBG is a student-led community at MVJCE. We learn AWS and cloud fundamentals, run hands-on sessions, and turn questions into things you can demo.</p>
+    </div>
+
+    <div class="pillars">
+      <article class="pillar rv">
+        <span class="glyph" aria-hidden="true">⌘</span>
+        <span class="num" aria-hidden="true">01</span>
+        <h3>Learn</h3>
+        <p>Start with the why. Build a clear mental model of cloud concepts, the problems they solve, and the trade-offs behind the tools.</p>
+      </article>
+      <article class="pillar rv d1">
+        <span class="glyph" aria-hidden="true">{ }</span>
+        <span class="num" aria-hidden="true">02</span>
+        <h3>Build</h3>
+        <p>Move from reading to doing. Sketch an architecture, try a service, watch what happens, and iterate into something real.</p>
+      </article>
+      <article class="pillar rv d2">
+        <span class="glyph" aria-hidden="true">◎</span>
+        <span class="num" aria-hidden="true">03</span>
+        <h3>Connect</h3>
+        <p>Meet students who want to learn alongside you. Explain what you found, ask for another view, leave the trail clearer.</p>
+      </article>
+    </div>
+
+    <div class="zero rv">
+      <b>You can start from zero.</b>
+      <span>No cloud experience needed. Curiosity is enough for your first session.</span>
+    </div>
+
+    <div class="facts">
+      <div class="fact rv"><b>0</b><span>Prior cloud experience required</span></div>
+      <div class="fact rv d1"><b>3</b><span>Session formats: workshops, build-a-thons, tech talks</span></div>
+      <div class="fact rv d2"><b>4</b><span>Build tracks to explore with a team</span></div>
+      <div class="fact rv d3"><b>100<sup>%</sup></b><span>Student-led, from planning to demo day</span></div>
+    </div>
+
+    <div class="team-head">
+      <div>
+        <p class="kicker mono rv"><b>01.1</b> Core team</p>
+        <h3 class="rv d1">The people keeping <em>the lights on.</em></h3>
+      </div>
+      <p class="rv d2">A student crew that plans sessions, mentors builds and grows the community. Want a seat? Come to a session and say hi.</p>
+    </div>
+    <div class="team" id="team"></div>
+  </div>
+</section>
+
+<!-- ================= PATH ================= -->
+<section class="sec paper" id="path">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="kicker mono rv"><b>02</b> A builder’s mindset</p>
+        <h2 class="h2 rv d1">From first question to <em>real confidence.</em></h2>
+      </div>
+      <p class="rv d2">You don’t need to know everything to begin. You need a good question, a safe place to experiment, and people who share what they know.</p>
+    </div>
+
+    <div class="flow" id="flow">
+      <div class="flow-line" aria-hidden="true"><i></i></div>
+      <div class="step"><div class="node">01</div><h3>Orient</h3><p class="tag mono">Find a starting point</p><p>Explore the core ideas and choose a question worth following.</p></div>
+      <div class="step"><div class="node">02</div><h3>Learn</h3><p class="tag mono">Build your foundation</p><p>Connect concepts to real services through guided sessions.</p></div>
+      <div class="step"><div class="node">03</div><h3>Make</h3><p class="tag mono">Try something small</p><p>Turn a concept into an experiment you can run and explain.</p></div>
+      <div class="step"><div class="node">04</div><h3>Share</h3><p class="tag mono">Bring others along</p><p>Document what worked and make the next person’s path easier.</p></div>
+    </div>
+
+    <div class="quote rv">
+      <p class="mono" style="color:var(--paper-muted)">Our approach</p>
+      <blockquote>Make ambitious technology <strong>approachable</strong> — and make learning something we do <strong>together.</strong></blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- ================= EVENTS ================= -->
+<section class="sec" id="events">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="kicker mono rv"><b>03</b> Signal log</p>
+        <h2 class="h2 rv d1">When the network <em>wakes.</em></h2>
+      </div>
+      <p class="rv d2">Workshops, build-a-thons and tech talks. Upcoming dates land here first — come to one, meet the people, find your next build.</p>
+    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filter events"></div>
+    <div class="log" id="log" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ================= TRACKS ================= -->
+<section class="sec" id="tracks" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="kicker mono rv"><b>04</b> Build tracks</p>
+        <h2 class="h2 rv d1">Proof a question can become <em>a thing.</em></h2>
+      </div>
+      <p class="rv d2">Directions teams can take. Pick one, form a crew, and learn by shipping. Project write-ups will appear here as the community’s work takes shape.</p>
+    </div>
+    <div class="bento" id="bento"></div>
+  </div>
+</section>
+
+<!-- ================= SCOUT / FAQ ================= -->
+<section class="sec" id="scout" style="padding-top:0">
+  <div class="wrap">
+    <div class="scout">
+      <div class="scout-intro">
+        <p class="kicker mono rv"><b>05</b> Ask Scout</p>
+        <h2 class="h2 rv d1">A few good <em>questions.</em></h2>
+        <div class="bot rv d2" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none"><path d="M24 7V3" stroke="#edcf98" stroke-width="2"/><circle cx="24" cy="3" r="2" fill="#8ae6ef"/><rect x="9" y="8" width="30" height="20" rx="7" fill="#e6d4ae" stroke="#ffe5af"/><rect x="13" y="13" width="22" height="10" rx="4" fill="#142d37"/><g class="eyes" fill="#94eff4"><rect x="17" y="16" width="4" height="4" rx="1"/><rect x="27" y="16" width="4" height="4" rx="1"/></g><rect x="16" y="31" width="16" height="10" rx="4" fill="#c8b48b"/><path d="M12 33L7 38M36 33L41 27M20 41V46M28 41V46" stroke="#e7d3aa" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="35" r="2" fill="#8ae6ef"/></svg>
+        </div>
+        <div class="qs" id="qs" role="group" aria-label="Questions"></div>
+      </div>
+      <div class="answer rv d1" role="region" aria-live="polite" aria-label="Scout’s answer">
+        <p class="label mono">Scout / your next step</p>
+        <h3 id="aTitle"></h3>
+        <p id="aCopy"></p>
+        <a class="btn btn-primary" id="aAction" href="#about"><span id="aActionText">Explore</span> <span class="arr" aria-hidden="true">↗</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= JOIN ================= -->
+<section class="join" id="join">
+  <div class="wrap">
+    <p class="mono">Your next step starts here</p>
+    <h2 class="rv">Stay curious.<br>Make it <span class="o">real.</span></h2>
+    <p class="rv d1">Start with an event. Meet the people. Find your next build. No cloud background required — just bring a question.</p>
+    <div class="ctas rv d2">
+      <a class="btn btn-primary" href="#events" id="joinBtn">Find your first session <span class="arr" aria-hidden="true">↗</span></a>
+      <a class="btn btn-ghost" href="https://aws.amazon.com/training/" target="_blank" rel="noopener noreferrer">Explore AWS training <span class="arr" aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true">A</span><span>AWS@MVJCE <small>SBG</small></span></a>
+      <nav aria-label="Footer">
+        <a href="#about">About</a><a href="#events">Events</a><a href="#tracks">Build tracks</a><a href="#scout">FAQ</a>
+        <a href="https://github.com/aromaticcompo/aws-mvjce" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+    <div class="legal mono">
+      <span>Student community · MVJ College of Engineering</span>
+      <span>AWS is a trademark of Amazon.com, Inc. or its affiliates.</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ============================================================
+   CONFIG — edit these to update the site
+   ============================================================ */
+const CONFIG = {
+  joinUrl: '',
+  // Core team — fill in names. Leave name '' to show an "Open seat" card.
+  team: [
+    {role:'Club lead',            name:'', note:'Sets direction and runs the group'},
+    {role:'Events & sessions',    name:'', note:'Plans workshops and talks'},
+    {role:'Build tracks',         name:'', note:'Mentors project teams'},
+    {role:'Community & outreach', name:'', note:'Welcomes new builders'}
+  ],            // registration form URL; leave '' to send people to #events
+  heroVideo: '',          // e.g. 'assets/hero.mp4' (a Luma loop). '' = animated grid only
+  events: [
+    {title:'Cloud Fundamentals Workshop', type:'Workshop',  when:'Date to be announced', description:'A hands-on introduction to cloud concepts and core services.', icon:'☁'},
+    {title:'Build-a-thon',                type:'Hackathon', when:'Date to be announced', description:'Get into a team, pick a problem, and build a cloud-powered solution.', icon:'{ }'},
+    {title:'Industry Tech Talk',          type:'Tech talk', when:'Date to be announced', description:'Practical stories and lessons from people working in technology.', icon:'▶'},
+    {title:'Serverless Lab',              type:'Workshop',  when:'Past session', description:'Recap and links coming soon.', icon:'λ'},
+    {title:'Campus Hack Night',           type:'Hackathon', when:'Past session', description:'Recap and links coming soon.', icon:'#'},
+    {title:'Careers in Cloud',            type:'Tech talk', when:'Past session', description:'Recap and links coming soon.', icon:'◎'}
+  ],
+  tracks: [
+    {title:'Cloud Infrastructure', copy:'Provision, manage, and monitor reliable infrastructure — then automate all of it as code.', tags:['Compute','Storage','IaC','Monitoring']},
+    {title:'AI / ML Experiments',  copy:'Prototype practical ideas with data, machine learning, and managed cloud tools.', tags:['Python','Models','Data']},
+    {title:'Web Applications',     copy:'Design and deploy useful web experiences with APIs and cloud databases.', tags:['Frontend','API','Database']},
+    {title:'Open Source',          copy:'Make tools and learning resources the wider community can use.', tags:['Git','Docs','Open source']}
+  ],
+  faq: [
+    {q:'What does this club do?', title:'Learn cloud. Build together.', copy:'AWSSBG is the AWS Student Builder Group at MVJCE. We learn AWS and cloud fundamentals, join hands-on sessions, and explore projects with other students.', href:'#about', action:'Explore the club'},
+    {q:'Can beginners join?', title:'Yes. You can start from zero.', copy:'No cloud experience is needed. Begin with an introductory session, bring a question, and learn alongside other students.', href:'#events', action:'Find a session'},
+    {q:'What can I build?', title:'Start with something you want to make.', copy:'Web applications, serverless tools, cloud infrastructure, or AI experiments — directions you can use to learn by building with a team.', href:'#tracks', action:'See build tracks'},
+    {q:'How do I start learning?', title:'Pick a topic. Try something small.', copy:'Explore AWS training resources, choose a topic that interests you, and run a small experiment you can explain at the next session.', href:'https://aws.amazon.com/training/', action:'AWS training', ext:true},
+    {q:'What does “building together” mean?', title:'Learn in the open.', copy:'Share what you tried, document what worked, and make it easier for someone else to continue from where you left off.', href:'#path', action:'See our approach'}
+  ]
+};
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Header + menu */
+const hdr = $('#hdr');
+const onScroll = () => hdr.classList.toggle('solid', scrollY > 24);
+addEventListener('scroll', onScroll, {passive:true}); onScroll();
+const menuBtn = $('#menuBtn');
+menuBtn.addEventListener('click', () => {
+  const open = document.body.classList.toggle('menu-open');
+  menuBtn.setAttribute('aria-expanded', open);
+  menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+});
+document.querySelectorAll('#nav a').forEach(a => a.addEventListener('click', () => {
+  document.body.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', false);
+}));
+
+/* Join links */
+if (CONFIG.joinUrl) {
+  document.querySelectorAll('[data-join], #joinBtn').forEach(a => {
+    a.href = CONFIG.joinUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
+  });
+  $('#joinBtn').firstChild.textContent = 'Register now ';
+}
+
+/* Status pill: next upcoming event */
+const next = CONFIG.events.find(e => e.when !== 'Past session');
+if (next) $('#statusText').textContent = `Next · ${next.title} · ${next.when}`;
+
+/* Ticker */
+const words = ['Compute','Serverless','Storage','AI / ML','Databases','Networking','Infrastructure as code','Containers','Security'];
+$('#ticker').innerHTML = [...words, ...words].map(w => `<span>${w}</span>`).join('');
+
+/* Events */
+const filters = ['All','Upcoming','Past','Workshop','Hackathon','Tech talk'];
+let active = 'All';
+const fBox = $('#filters'), log = $('#log');
+fBox.innerHTML = filters.map(f => `<button class="chip" type="button" aria-pressed="${f===active}" data-f="${f}">${f}</button>`).join('');
+fBox.addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  active = b.dataset.f;
+  fBox.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+  renderEvents();
+});
+function renderEvents() {
+  const list = CONFIG.events.filter(e => active === 'All'
+    || (active === 'Upcoming' ? e.when !== 'Past session' : active === 'Past' ? e.when === 'Past session' : e.type === active));
+  log.innerHTML = list.length ? list.map(e => {
+    const up = e.when !== 'Past session';
+    return `<article class="row">
+      <div class="ic" aria-hidden="true">${esc(e.icon)}</div>
+      <div><h3>${esc(e.title)}</h3><div class="type mono">${esc(e.type)}</div></div>
+      <p>${esc(e.description)}</p>
+      <span class="when mono ${up ? 'up' : ''}">${esc(up ? e.when : 'Past')}</span>
+    </article>`;
+  }).join('') : `<p class="empty">Nothing here yet — check back soon.</p>`;
+}
+renderEvents();
+
+/* Tracks — small architecture glyphs */
+const arch = [
+  `<svg class="arch" viewBox="0 0 220 150" fill="none" aria-hidden="true"><g stroke="rgba(242,239,233,.22)" stroke-width="1"><rect x="1" y="1" width="218" height="148" rx="14" stroke-dasharray="4 5"/><path d="M60 45h50M60 105h50M140 45v60M110 45h30M110 105h30"/></g><g stroke="#ff9900" stroke-width="1.5"><rect x="22" y="27" width="38" height="36" rx="9"/><rect x="22" y="87" width="38" height="36" rx="9"/><rect x="160" y="57" width="40" height="36" rx="9" fill="rgba(255,153,0,.12)"/></g><path d="M140 75h20" stroke="#ff9900" stroke-width="1.5"/><circle cx="140" cy="75" r="4" fill="#ff9900"/></svg>`,
+  `<svg class="arch" width="96" height="96" viewBox="0 0 96 96" fill="none" aria-hidden="true"><g stroke="rgba(242,239,233,.25)"><path d="M16 24L48 48L16 72M80 24L48 48L80 72M16 24L80 24M16 72L80 72"/></g><g fill="#ff9900"><circle cx="16" cy="24" r="5"/><circle cx="16" cy="72" r="5"/><circle cx="80" cy="24" r="5"/><circle cx="80" cy="72" r="5"/></g><circle cx="48" cy="48" r="9" stroke="#ff9900" stroke-width="1.5" fill="rgba(255,153,0,.15)"/></svg>`,
+  `<svg class="arch" width="96" height="64" viewBox="0 0 96 64" fill="none" aria-hidden="true"><rect x="1" y="1" width="94" height="62" rx="10" stroke="rgba(242,239,233,.25)"/><path d="M1 16h94" stroke="rgba(242,239,233,.25)"/><circle cx="10" cy="8.5" r="2.5" fill="#ff9900"/><rect x="12" y="26" width="34" height="8" rx="3" fill="rgba(255,153,0,.6)"/><rect x="12" y="40" width="56" height="5" rx="2.5" fill="rgba(242,239,233,.2)"/><rect x="12" y="50" width="44" height="5" rx="2.5" fill="rgba(242,239,233,.2)"/></svg>`,
+  `<svg class="arch" width="80" height="80" viewBox="0 0 80 80" fill="none" aria-hidden="true"><g stroke="#ff9900" stroke-width="1.5"><circle cx="20" cy="16" r="7"/><circle cx="20" cy="64" r="7"/><circle cx="60" cy="30" r="7" fill="rgba(255,153,0,.15)"/></g><path d="M20 23v34M60 37c0 14-40 8-40 20" stroke="rgba(242,239,233,.35)" stroke-width="1.5"/></svg>`
+];
+$('#bento').innerHTML = CONFIG.tracks.map((t, i) => `
+  <article class="track rv ${i ? 'd' + Math.min(i,3) : ''}">
+    ${arch[i % arch.length]}
+    <span class="idx mono">Track ${String(i + 1).padStart(2, '0')}</span>
+    <h3>${esc(t.title)}</h3>
+    <p>${esc(t.copy)}</p>
+    <div class="tags">${t.tags.map(g => `<span>${esc(g)}</span>`).join('')}</div>
+  </article>`).join('');
+
+/* Scout */
+const qs = $('#qs');
+qs.innerHTML = CONFIG.faq.map((f, i) => `<button class="q" type="button" aria-pressed="${i===0}" data-i="${i}">${esc(f.q)} <span aria-hidden="true">0${i+1}</span></button>`).join('');
+let typing = 0;
+function answer(i, animate) {
+  const f = CONFIG.faq[i];
+  $('#aTitle').textContent = f.title;
+  const a = $('#aAction');
+  a.href = f.href; $('#aActionText').textContent = f.action;
+  if (f.ext) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } else { a.removeAttribute('target'); a.removeAttribute('rel'); }
+  const el = $('#aCopy'), id = ++typing;
+  if (!animate || reduce) { el.textContent = f.copy; return; }
+  let n = 0; el.textContent = '';
+  (function step() {
+    if (id !== typing) return;
+    n += 3; el.textContent = f.copy.slice(0, n);
+    if (n < f.copy.length) requestAnimationFrame(step);
+  })();
+}
+qs.addEventListener('click', e => {
+  const b = e.target.closest('[data-i]'); if (!b) return;
+  qs.querySelectorAll('.q').forEach(q => q.setAttribute('aria-pressed', q === b));
+  answer(+b.dataset.i, true);
+});
+answer(0, false);
+
+/* Reveal on scroll */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {rootMargin:'0px 0px -8% 0px'});
+document.querySelectorAll('.rv').forEach(el => io.observe(el));
+
+/* Spotlight on cards */
+document.addEventListener('pointermove', e => {
+  const c = e.target.closest('.pillar, .track'); if (!c) return;
+  const r = c.getBoundingClientRect();
+  c.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+  c.style.setProperty('--my', (e.clientY - r.top) + 'px');
+});
+
+/* Path progress */
+const flow = $('#flow'), line = flow.querySelector('.flow-line'), steps = [...flow.querySelectorAll('.step')];
+function flowProgress() {
+  const r = flow.getBoundingClientRect(), vh = innerHeight;
+  const p = Math.max(0, Math.min(1, (vh * .8 - r.top) / (r.height + vh * .3)));
+  line.style.setProperty('--p', p);
+  steps.forEach((s, i) => s.classList.toggle('lit', p >= (i / steps.length) + .05 || (reduce && r.top < vh)));
+}
+addEventListener('scroll', flowProgress, {passive:true}); addEventListener('resize', flowProgress); flowProgress();
+
+/* Nav active state */
+const links = [...document.querySelectorAll('#nav a')];
+const navIo = new IntersectionObserver(es => es.forEach(e => {
+  if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id));
+}), {rootMargin:'-45% 0px -50% 0px'});
+['about','path','events','tracks','scout'].forEach(id => navIo.observe(document.getElementById(id)));
+
+
+/* ============================================================
+   FIBER EDITION — server boot, port hub, fiber-optic travel
+   ============================================================ */
+const DEST = {
+  top:    {label:'Ports',           path:'/',        c:[0xff9900, 0x7fe3ec], css:'#ff9900'},
+  about:  {label:'About & team',    path:'/about',   c:[0xff9900, 0xffd28a], css:'#ff9900'},
+  path:   {label:'Our approach',    path:'/path',    c:[0xffb547, 0xff9900], css:'#ffb547'},
+  tracks: {label:'Builds',          path:'/builds',  c:[0xffb547, 0x7fe3ec], css:'#ffb547'},
+  events: {label:'Upcoming events', path:'/events',  c:[0x7fe3ec, 0xffffff], css:'#7fe3ec'},
+  scout:  {label:'FAQ',             path:'/faq',     c:[0xc9f6fa, 0xff9900], css:'#7fe3ec'},
+  join:   {label:'Join',            path:'/join',    c:[0xff9900, 0xffffff], css:'#ff9900'}
+};
+
+/* Team */
+$('#team').innerHTML = CONFIG.team.map(m => {
+  const open = !m.name;
+  const initials = open ? '+' : m.name.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  return `<article class="member rv ${open ? 'open' : ''}">
+    <div class="avatar" aria-hidden="true">${esc(initials)}</div>
+    <div><p class="role mono">${esc(m.role)}</p><b>${esc(m.name || 'Open seat')}</b><span class="note">${esc(m.note || '')}</span></div>
+  </article>`;
+}).join('');
+document.querySelectorAll('#team .rv').forEach(el => io.observe(el));
+
+/* ---------- Fiber scene (Three.js) ---------- */
+function makeFiber() {
+  if (!window.THREE) return null;
+  const canvas = $('#fiber');
+  let renderer;
+  try { renderer = new THREE.WebGLRenderer({canvas, antialias:false, powerPreference:'high-performance'}); }
+  catch (e) { return null; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5));
+  renderer.setClearColor(0x0b0f14, 1);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 220);
+
+  // a long, closed, wandering cable
+  const pts = [], N = 44;
+  for (let i = 0; i < N; i++) {
+    const a = i / N * Math.PI * 2;
+    const r = 82 + Math.sin(a * 3) * 16 + Math.cos(a * 5) * 7;
+    pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a * 4) * 10 + Math.cos(a * 7) * 4, Math.sin(a) * r));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, true, 'centripetal');
+  const SEG = 1800;
+  const geo = new THREE.TubeGeometry(curve, SEG, 2.2, 72, true);
+
+  const U = {
+    uTime:{value:0}, uSpeed:{value:0}, uBoot:{value:0},
+    uC1:{value:new THREE.Color(0xff9900)}, uC2:{value:new THREE.Color(0x7fe3ec)}
+  };
+  const mat = new THREE.ShaderMaterial({
+    uniforms: U, side: THREE.BackSide,
+    vertexShader: `
+      varying vec2 vUv; varying float vDepth;
+      void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `
+      precision highp float;
+      uniform float uTime, uSpeed, uBoot; uniform vec3 uC1, uC2;
+      varying vec2 vUv; varying float vDepth;
+      float hash(float n){ return fract(sin(n) * 43758.5453); }
+      void main(){
+        float lanes = 40.0;
+        float ly = vUv.y * lanes;
+        float lane = floor(ly);
+        float h  = hash(lane + 1.0);
+        float h2 = hash(lane * 7.31 + 3.0);
+        float d = abs(fract(ly) - 0.5) * 2.0;
+        float core = pow(1.0 - d, 12.0);
+        float glow = pow(1.0 - d, 3.0);
+        float x = vUv.x * (60.0 + h * 60.0) - uTime * (0.5 + h * 0.9) + h2 * 20.0;
+        float s = fract(x);
+        float k = mix(24.0, 1.6, uSpeed);
+        float streak = exp(-s * k);
+        float act = step(0.5 - uSpeed * 0.5, h2) * uBoot;
+        vec3 col = mix(uC1, uC2, h);
+        vec3 c = vec3(0.010, 0.014, 0.022) + col * glow * 0.06 * uBoot;
+        c += col * streak * (core * 1.9 + glow * 0.3) * act * (1.15 + uSpeed * 0.5);
+        float ring = pow(abs(sin(vUv.x * 900.0)), 120.0);
+        c += col * ring * 0.05 * uBoot;
+        float fog = exp(-vDepth * mix(0.05, 0.03, uSpeed));
+        gl_FragColor = vec4(c * fog, 1.0);
+      }`
+  });
+  scene.add(new THREE.Mesh(geo, mat));
+
+  // light dust inside the core
+  const D = 2200, pos = new Float32Array(D * 3);
+  for (let i = 0; i < D; i++) {
+    const t = Math.random(), idx = Math.floor(t * SEG) % SEG;
+    const p = curve.getPointAt(t), n = geo.normals[idx], b = geo.binormals[idx];
+    const ang = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * 1.9;
+    pos[i*3]   = p.x + (n.x * Math.cos(ang) + b.x * Math.sin(ang)) * r;
+    pos[i*3+1] = p.y + (n.y * Math.cos(ang) + b.y * Math.sin(ang)) * r;
+    pos[i*3+2] = p.z + (n.z * Math.cos(ang) + b.z * Math.sin(ang)) * r;
+  }
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const dm = new THREE.PointsMaterial({size:0.05, color:0xffd28a, transparent:true, opacity:0, blending:THREE.AdditiveBlending, depthWrite:false});
+  scene.add(new THREE.Points(dg, dm));
+
+  let t = Math.random(), roll = 0;
+  const c1 = new THREE.Color(0xff9900), c2 = new THREE.Color(0x7fe3ec);
+  function resize() {
+    const w = innerWidth, h = innerHeight;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  resize(); addEventListener('resize', resize);
+  return {
+    U,
+    tint(a, b) { c1.set(a); c2.set(b); },
+    step(dt, speed, boot) {
+      U.uSpeed.value = speed; U.uBoot.value = boot;
+      U.uTime.value += dt * (0.35 + speed * 9.0);
+      U.uC1.value.lerp(c1, Math.min(1, dt * 3)); U.uC2.value.lerp(c2, Math.min(1, dt * 3));
+      dm.color.copy(U.uC2.value); dm.opacity = 0.75 * boot;
+      t = (t + dt * (0.0035 + speed * speed * 0.085)) % 1;
+      roll += dt * (0.04 + speed * 1.6);
+      const p = curve.getPointAt(t), q = curve.getPointAt((t + 0.006) % 1);
+      camera.position.copy(p); camera.lookAt(q); camera.rotateZ(roll);
+      camera.fov = 72 + speed * 26; camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+    }
+  };
+}
+
+const fiber = makeFiber();
+const body = document.body;
+const travelEl = $('#travel'), hudBar = $('#hudBar'), hudDest = $('#hudDest'), hudHops = $('#hudHops'), hudLat = $('#hudLat'), hudPath = $('#hudPath');
+
+/* ---------- Loop ---------- */
+let running = false, last = 0, speed = 0, boot = 0, bootTarget = 0, heroVisible = true, travel = null;
+function wake() { if (!running && fiber) { running = true; last = performance.now(); requestAnimationFrame(loop); } }
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  boot += (bootTarget - boot) * Math.min(1, dt * 2.2);
+  if (travel) {
+    const p = Math.max(0, Math.min(1, (now - travel.start) / travel.dur));
+    const ramp = p < .72 ? Math.pow(p / .72, 2.4) : 1;
+    speed = ramp;
+    hudBar.style.width = (Math.min(1, p / .85) * 100) + '%';
+    const hops = Math.min(travel.hops, 1 + Math.floor(p / .85 * travel.hops));
+    hudHops.textContent = `hop ${String(hops).padStart(2, '0')}/${String(travel.hops).padStart(2, '0')}`;
+    hudLat.textContent = (0.08 + p * 0.34 + Math.random() * 0.02).toFixed(2) + ' ms';
+    if (p > .8 && !travel.flashed) { travel.flashed = true; travelEl.classList.add('flashing'); }
+    if (p > .88 && !travel.jumped) { travel.jumped = true; land(travel.id); }
+    if (p >= 1) { travel = null; body.classList.remove('traveling'); travelEl.classList.remove('flashing'); }
+  } else {
+    speed += (0 - speed) * Math.min(1, dt * 3);
+  }
+  if (fiber) fiber.step(dt, speed, boot);
+  if (travel || heroVisible || speed > .01 || Math.abs(bootTarget - boot) > .01) requestAnimationFrame(loop);
+  else running = false;
+}
+
+function land(id) {
+  const el = id === 'top' ? document.documentElement : document.getElementById(id);
+  const html = document.documentElement, prev = html.style.scrollBehavior;
+  html.style.scrollBehavior = 'auto';
+  if (id === 'top') scrollTo(0, 0); else el.scrollIntoView({block:'start'});
+  html.style.scrollBehavior = prev;
+  if (id !== 'top') {
+    el.querySelectorAll('.rv').forEach(r => r.classList.add('in'));
+    el.classList.remove('landed'); void el.offsetWidth; el.classList.add('landed');
+    const focusT = el.querySelector('h2, h3'); if (focusT) { focusT.setAttribute('tabindex', '-1'); focusT.focus({preventScroll:true}); }
+  }
+}
+
+function go(id) {
+  if (!DEST[id] || travel) return;
+  body.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', false);
+  if (!fiber || reduce || !body.classList.contains('booted')) {
+    if (id === 'top') scrollTo({top:0, behavior: reduce ? 'auto' : 'smooth'});
+    else document.getElementById(id).scrollIntoView({behavior: reduce ? 'auto' : 'smooth'});
+    return;
+  }
+  const d = DEST[id];
+  fiber.tint(d.c[0], d.c[1]);
+  travelEl.style.setProperty('--hc', d.css);
+  hudDest.textContent = d.label;
+  hudPath.textContent = 'campus-1 → ' + d.path;
+  hudBar.style.width = '0%';
+  travel = {id, start: performance.now(), dur: 2300, hops: 5 + Math.floor(Math.random() * 4), flashed:false, jumped:false};
+  body.classList.add('traveling');
+  wake();
+}
+
+/* Intercept in-page links + ports */
+document.addEventListener('click', e => {
+  const port = e.target.closest('[data-go]');
+  if (port) { e.preventDefault(); go(port.dataset.go); return; }
+  const a = e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const id = a.getAttribute('href').slice(1);
+  if (DEST[id]) { e.preventDefault(); go(id); }
+});
+
+/* Hero visibility -> canvas on/off */
+new IntersectionObserver(([en]) => {
+  heroVisible = en.intersectionRatio > 0.05;
+  body.classList.toggle('away', !heroVisible);
+  if (heroVisible) wake();
+}, {threshold:[0, 0.05, 0.2]}).observe($('#top'));
+
+/* ---------- Boot sequence ---------- */
+(() => {
+  const log = $('#bootLog'), bar = $('#bootBar'), pct = $('#bootPct'), stage = $('#bootStage');
+  const seen = (() => { try { return sessionStorage.getItem('mvjce-booted'); } catch (e) { return null; } })();
+  const lines = [
+    ['<span class="dim">AWS@MVJCE BIOS · builder edition</span>', 'power on'],
+    ['[ <span class="ok"> OK </span> ] Power-on self test', 'self test'],
+    ['[ <span class="ok"> OK </span> ] Mounting <span class="k">/campus/mvjce</span>', 'mounting'],
+    ['[ <span class="ok"> OK </span> ] Starting builder-daemon', 'services'],
+    ['[ <span class="run">....</span> ] Lighting fiber link · 4 lanes', 'fiber link'],
+    ['[ <span class="ok"> OK </span> ] Region <span class="k">campus-1</span> online', 'online'],
+    ['<span class="run">›</span> select a destination_', 'ready']
+  ];
+  const total = seen ? 900 : 3000;
+  let done = false;
+  function finish() {
+    if (done) return; done = true;
+    log.innerHTML = lines.map(l => l[0]).join('\n').replace('<span class="run">....</span>', '<span class="ok"> OK </span>');
+    bar.style.width = '100%'; pct.textContent = '100%'; stage.textContent = 'ready';
+    bootTarget = 1; wake();
+    setTimeout(() => {
+      $('#boot').classList.add('done'); body.classList.add('booted', 'lit');
+      try { sessionStorage.setItem('mvjce-booted', '1'); } catch (e) {}
+    }, reduce ? 0 : 380);
+  }
+  $('#skipBoot').addEventListener('click', finish);
+  if (!fiber) body.classList.add('no-fiber');
+  if (reduce) { finish(); return; }
+  body.classList.add('lit'); bootTarget = 0.12; wake();
+  const start = performance.now();
+  (function tick(now) {
+    if (done) return;
+    const p = Math.max(0, Math.min(1, (now - start) / total));
+    const n = Math.min(lines.length, Math.floor(p * lines.length) + 1);
+    log.innerHTML = lines.slice(0, n).map(l => l[0]).join('\n');
+    stage.textContent = lines[n - 1][1];
+    bar.style.width = (p * 100) + '%';
+    pct.textContent = String(Math.floor(p * 100)).padStart(3, '0') + '%';
+    if (n >= 5) bootTarget = Math.max(bootTarget, (p - .55) / .45);
+    if (p < 1) requestAnimationFrame(tick); else finish();
+  })(start);
+})();
+</script>
+</body>
+</html>
