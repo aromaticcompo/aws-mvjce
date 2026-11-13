@@ -466,6 +466,11 @@ body.settled .hub{transition:none}
 @keyframes approach{from{transform:scale(.82);letter-spacing:-.06em}to{transform:scale(1.04);letter-spacing:-.035em}}
 @keyframes recede{from{transform:scale(1.18);letter-spacing:-.02em}to{transform:scale(.96);letter-spacing:-.045em}}
 .travel.rev .hud-bar i{margin-left:auto}
+/* boot scene */
+.boot{background:#06080c;place-items:center start;padding:24px var(--pad)}
+#rack{position:absolute;inset:0;width:100%;height:100%}
+.boot-inner{position:relative;width:min(500px,100%);background:rgba(8,11,15,.72)}
+@media (max-width:760px){.boot{place-items:end center;padding-bottom:28px}.boot-inner{background:rgba(8,11,15,.82)}}
 </style>
 </head>
 <body>
@@ -508,6 +513,7 @@ body.settled .hub{transition:none}
 <!-- ================= HERO: boot + ports ================= -->
 <section class="hero fx" id="top" aria-label="Introduction">
   <div class="boot" id="boot" role="status" aria-live="polite">
+    <canvas id="rack" aria-hidden="true"></canvas>
     <div class="boot-inner">
       <div class="boot-head mono">
         <span><i class="boot-led"></i>AWS@MVJCE · node campus-1</span>
@@ -1246,6 +1252,192 @@ new IntersectionObserver(([en]) => {
   if (heroVisible) wake();
 }, {threshold:[0, 0.05, 0.2]}).observe($('#top'));
 
+
+/* ---------- Boot scene: a server rack powering on, fibers lighting up ---------- */
+const Rack = (() => {
+  const cv = $('#rack'); if (!cv) return null;
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, dpr = 1, p = 0, raf = 0, alive = true;
+  const t0 = performance.now();
+  const U = 12, LEDS = 9;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const units = Array.from({length: U}, (_, i) => ({
+    seed: Math.random(),
+    cyan: Math.random() < .3,
+    leds: Array.from({length: LEDS}, () => ({cyan: Math.random() < .18, ph: rnd(0, 6.28), rate: rnd(1.5, 11), duty: rnd(.25, .85)}))
+  }));
+  const bokeh = Array.from({length: 46}, () => ({x: Math.random(), y: Math.random(), r: rnd(3, 34), a: rnd(.04, .22), cyan: Math.random() < .28, d: rnd(.2, 1), ph: rnd(0, 6.28)}));
+  const fg = Array.from({length: 7}, () => ({x: Math.random(), y: Math.random(), r: rnd(60, 160), a: rnd(.03, .08), cyan: Math.random() < .3, ph: rnd(0, 6.28)}));
+
+  function size() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = Math.max(1, W * dpr); cv.height = Math.max(1, H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  function glow(x, y, r, rgb, a) {
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  function bez(p0, p1, p2, p3, s) {
+    const u = 1 - s;
+    return [u*u*u*p0[0] + 3*u*u*s*p1[0] + 3*u*s*s*p2[0] + s*s*s*p3[0], u*u*u*p0[1] + 3*u*u*s*p1[1] + 3*u*s*s*p2[1] + s*s*s*p3[1]];
+  }
+
+  function frame(now) {
+    const time = (now - t0) / 1000;
+    const mob = W < 760;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = '#06080c'; ctx.fillRect(0, 0, W, H);
+
+    // far bokeh (data hall behind)
+    ctx.globalCompositeOperation = 'lighter';
+    for (const b of bokeh) {
+      const on = clamp(p * 1.6 - b.d * .5);
+      if (!on) continue;
+      const tw = .6 + .4 * Math.sin(time * (.6 + b.d) + b.ph);
+      glow(b.x * W, b.y * H, b.r, b.cyan ? '127,227,236' : '255,153,0', b.a * on * tw);
+    }
+    ctx.globalCompositeOperation = 'source-over';
+
+    // camera: slow push-in
+    const zoom = 1 + p * .09 + Math.min(time, 8) * .006;
+    const rh = Math.min(H * .8, 760), rw = rh * .44;
+    const cx = mob ? W * .5 : W * .67, cy = H * (mob ? .42 : .5);
+    ctx.save();
+    ctx.translate(cx, cy); ctx.scale(zoom, zoom); ctx.translate(-cx, -cy);
+    const x0 = cx - rw / 2, y0 = cy - rh / 2;
+
+    // haze behind rack
+    ctx.globalCompositeOperation = 'lighter';
+    glow(cx, cy, rh * .9, '255,140,20', .08 + p * .16);
+    ctx.globalCompositeOperation = 'source-over';
+
+    // side face (perspective)
+    const sd = rw * .14;
+    let g = ctx.createLinearGradient(x0 - sd, 0, x0, 0);
+    g.addColorStop(0, '#05070a'); g.addColorStop(1, '#0d1117');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - sd, y0 + rh * .035); ctx.lineTo(x0 - sd, y0 + rh * .965); ctx.lineTo(x0, y0 + rh); ctx.closePath(); ctx.fill();
+    // front frame
+    g = ctx.createLinearGradient(x0, y0, x0 + rw, y0 + rh);
+    g.addColorStop(0, '#222932'); g.addColorStop(.5, '#151a20'); g.addColorStop(1, '#0d1014');
+    ctx.fillStyle = g; ctx.fillRect(x0, y0, rw, rh);
+    ctx.strokeStyle = 'rgba(255,255,255,.07)'; ctx.lineWidth = 1; ctx.strokeRect(x0 + .5, y0 + .5, rw - 1, rh - 1);
+
+    const pad = rw * .05, uh = (rh - pad * 2) / U;
+    const ports = [];
+    for (let i = 0; i < U; i++) {
+      const u = units[i];
+      const uy = y0 + pad + i * uh;
+      const on = clamp((p * 1.3 - (i / U) * .95) * 5);
+      // slab
+      const sx = x0 + pad, sw = rw - pad * 2;
+      g = ctx.createLinearGradient(0, uy, 0, uy + uh);
+      g.addColorStop(0, '#262d37'); g.addColorStop(.12, '#171c23'); g.addColorStop(1, '#0f1217');
+      ctx.fillStyle = g; ctx.fillRect(sx, uy + 1.5, sw, uh - 3);
+      ctx.fillStyle = `rgba(255,255,255,${.05 + on * .04})`; ctx.fillRect(sx, uy + 1.5, sw, 1);
+      // vents
+      ctx.strokeStyle = 'rgba(255,255,255,.05)';
+      for (let v = 0; v < 7; v++) { const vx = sx + 8 + v * 4; ctx.beginPath(); ctx.moveTo(vx, uy + uh * .28); ctx.lineTo(vx, uy + uh * .72); ctx.stroke(); }
+      // drive bays
+      for (let d = 0; d < 4; d++) {
+        const bx = sx + sw * .24 + d * sw * .1;
+        ctx.fillStyle = '#080a0d'; ctx.fillRect(bx, uy + uh * .25, sw * .085, uh * .5);
+        const act = on && Math.sin(time * (7 + d * 3) + u.seed * 20 + d) > .55;
+        if (act) { ctx.fillStyle = 'rgba(126,226,161,.9)'; ctx.fillRect(bx + 2, uy + uh * .62, 3, 2); }
+      }
+      // LEDs
+      const lx0 = sx + sw * .66, lgap = (sw * .3) / LEDS;
+      ctx.globalCompositeOperation = 'lighter';
+      u.leds.forEach((l, k) => {
+        const lx = lx0 + k * lgap, ly = uy + uh / 2;
+        const ledOn = clamp(on * 1.4 - k * .05);
+        const blink = k === 0 ? 1 : (Math.sin(time * l.rate + l.ph) * .5 + .5) < l.duty ? 1 : .18;
+        const b = ledOn * blink;
+        const rgb = l.cyan ? '127,227,236' : '255,153,0';
+        ctx.fillStyle = b > .05 ? `rgba(${rgb},${.35 + b * .65})` : 'rgba(255,255,255,.06)';
+        ctx.fillRect(lx - 2, ly - 2, 4, 4);
+        if (b > .05) glow(lx, ly, 15, rgb, b * .6);
+      });
+      ctx.globalCompositeOperation = 'source-over';
+      // port on right edge
+      const px = sx + sw - 4, py = uy + uh / 2;
+      ctx.fillStyle = on ? (u.cyan ? '#7fe3ec' : '#ff9900') : '#1d232b';
+      ctx.fillRect(px - 3, py - 2, 6, 4);
+      ports.push({x: px, y: py, on, u, i});
+    }
+    // rails
+    ctx.fillStyle = 'rgba(255,255,255,.04)';
+    ctx.fillRect(x0 + pad * .35, y0 + pad * .6, 2, rh - pad * 1.2);
+    ctx.fillRect(x0 + rw - pad * .35 - 2, y0 + pad * .6, 2, rh - pad * 1.2);
+    // rim light on the rack edge
+    ctx.globalCompositeOperation = 'lighter';
+    g = ctx.createLinearGradient(0, y0, 0, y0 + rh);
+    g.addColorStop(0, 'rgba(255,153,0,0)'); g.addColorStop(.5, `rgba(255,170,60,${.25 + p * .45})`); g.addColorStop(1, 'rgba(255,153,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(x0 + rw - 1.5, y0, 2.5, rh);
+    ctx.fillStyle = g; ctx.fillRect(x0 - 1, y0, 1.5, rh);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.restore();
+
+    // fiber cables sweeping toward the camera
+    for (const pt of ports) {
+      const sx = cx + (pt.x - cx) * zoom, sy = cy + (pt.y - cy) * zoom;
+      const k = pt.i / (U - 1);
+      const end = mob
+        ? [W * (k < .5 ? -.15 + k * .3 : .85 + (k - .5) * .5), H * 1.15]
+        : [W * (.82 + k * .32), H * (1.08 + k * .1)];
+      const c1 = [sx + rw * .5, sy];
+      const c2 = [end[0] - (mob ? 0 : W * .12), end[1] - H * (.35 + k * .2)];
+      const N = 34; let prev = [sx, sy];
+      ctx.lineCap = 'round';
+      for (let s = 1; s <= N; s++) {
+        const q = bez([sx, sy], c1, c2, end, s / N);
+        const w = 1.6 + Math.pow(s / N, 2.2) * (mob ? 12 : 22);
+        ctx.strokeStyle = '#161c24'; ctx.lineWidth = w;
+        ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+        if (pt.on > 0) {
+          const rgb = pt.u.cyan ? '127,227,236' : '255,153,0';
+          let lum = .18 * pt.on;
+          for (let j = 0; j < 3; j++) {
+            const pos = ((time * .42 + j / 3 + pt.u.seed) % 1);
+            const dd = s / N - pos;
+            lum += Math.exp(-(dd * dd) / .0018) * pt.on;
+          }
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.strokeStyle = `rgba(${rgb},${Math.min(1, lum)})`; ctx.lineWidth = Math.max(1.2, w * .38);
+          ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+          if (lum > .5) { ctx.strokeStyle = `rgba(${rgb},${(lum - .5) * .35})`; ctx.lineWidth = w * 1.9; ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(q[0], q[1]); ctx.stroke(); }
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        prev = q;
+      }
+    }
+
+    // foreground bokeh drifting past the lens
+    ctx.globalCompositeOperation = 'lighter';
+    for (const f of fg) {
+      const x = ((f.x + time * .012) % 1.2 - .1) * W, y = (f.y + Math.sin(time * .3 + f.ph) * .02) * H;
+      glow(x, y, f.r, f.cyan ? '127,227,236' : '255,153,0', f.a * clamp(p * 2));
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    // vignette
+    g = ctx.createRadialGradient(W * .55, H * .5, Math.min(W, H) * .25, W * .55, H * .5, Math.max(W, H) * .8);
+    g.addColorStop(0, 'rgba(6,8,12,0)'); g.addColorStop(1, 'rgba(6,8,12,.85)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    if (alive) raf = requestAnimationFrame(frame);
+  }
+  size(); addEventListener('resize', size);
+  raf = requestAnimationFrame(frame);
+  return {
+    set(v) { p = v; },
+    stop() { alive = false; cancelAnimationFrame(raf); }
+  };
+})();
+
 /* ---------- Boot sequence ---------- */
 (() => {
   const log = $('#bootLog'), bar = $('#bootBar'), pct = $('#bootPct'), stage = $('#bootStage');
@@ -1266,6 +1458,7 @@ new IntersectionObserver(([en]) => {
     log.innerHTML = lines.map(l => l[0]).join('\n').replace('<span class="run">....</span>', '<span class="ok"> OK </span>');
     bar.style.width = '100%'; pct.textContent = '100%'; stage.textContent = 'ready';
     bootTarget = 1; wake();
+    if (Rack) { Rack.set(1); setTimeout(() => Rack.stop(), 1400); }
     setTimeout(() => {
       $('#boot').classList.add('done'); body.classList.add('booted', 'lit');
       try { sessionStorage.setItem('mvjce-booted', '1'); } catch (e) {}
@@ -1286,6 +1479,7 @@ new IntersectionObserver(([en]) => {
     stage.textContent = lines[n - 1][1];
     bar.style.width = (p * 100) + '%';
     pct.textContent = String(Math.floor(p * 100)).padStart(3, '0') + '%';
+    if (Rack) Rack.set(p);
     if (n >= 5) bootTarget = Math.max(bootTarget, (p - .55) / .45);
     if (p < 1) requestAnimationFrame(tick); else finish();
   })(start);
