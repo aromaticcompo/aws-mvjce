@@ -577,6 +577,11 @@ html.lock,html.lock body{overflow:hidden}
 .hud-bar{margin-top:16px}
 .hud::before{height:200%;width:130%}
 [tabindex="-1"]:focus{outline:none}
+/* new ending: the 3D layer fades over the page instead of cutting */
+body.traveling.fading #fiber{opacity:0!important;transition:opacity .3s ease}
+body.fading .travel{opacity:0;transition:opacity .2s}
+.travel .hud h2{animation:none}
+.travel.out .hud{opacity:0;transition:opacity .25s}
 </style>
 </head>
 <body>
@@ -1266,7 +1271,19 @@ function makeFiber() {
       port.position.set(toX(968), yOf(i), UD/2 + 0.02); sc.add(port);
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xff9900, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false}));
       halo.scale.set(.55, .55, 1); halo.position.copy(port.position); halo.position.z += .03; sc.add(halo);
-      return {id: u.id, label: u.label, idx: i, y: yOf(i), leds, port, halo};
+      // glowing copy of the label, faded in when this stack becomes the destination
+      const gc = document.createElement('canvas'); gc.width = 1024; gc.height = 128;
+      const gx = gc.getContext('2d'); gx.textBaseline = 'middle';
+      gx.shadowColor = '#ff9900'; gx.shadowBlur = 22;
+      gx.font = "500 26px 'JetBrains Mono', ui-monospace, monospace"; gx.fillStyle = '#ffb547';
+      gx.fillText(String(i + 1).padStart(2, '0'), 140, 66);
+      gx.font = "800 36px 'Archivo', 'Arial Narrow', Arial, sans-serif"; gx.fillStyle = '#ffe2b0';
+      gx.fillText(u.label, 192, 66); gx.fillText(u.label, 192, 66);
+      const labelMid = (140 + 192 + gx.measureText(u.label).width) / 2;
+      const glowMat = new THREE.MeshBasicMaterial({map: new THREE.CanvasTexture(gc), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false});
+      const labelGlow = new THREE.Mesh(new THREE.PlaneGeometry(UW, UH), glowMat);
+      labelGlow.position.set(0, yOf(i), UD/2 + 0.004); sc.add(labelGlow);
+      return {id: u.id, label: u.label, idx: i, y: yOf(i), leds, port, halo, labelGlow, labelX: toX(labelMid), labelW: (192 + gx.measureText(u.label).width - 140) / 1024 * UW};
     });
     // dust in the air
     const DN = phone ? 160 : 360, dp = new Float32Array(DN * 3);
@@ -1276,7 +1293,9 @@ function makeFiber() {
     sc.add(dust);
     const pulse = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffd28a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false}));
     pulse.scale.set(.42, .42, 1); sc.add(pulse);
-    return {sc, cam, units, pulse, pulseLight, dust, UD, camPos: new THREE.Vector3(), camLook: new THREE.Vector3(), cable: null, time: 0};
+    const burst = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false}));
+    sc.add(burst);
+    return {sc, cam, units, pulse, burst, pulseLight, dust, UD, camPos: new THREE.Vector3(), camLook: new THREE.Vector3(), cable: null, time: 0};
   }
   const cableVert = 'varying vec2 vUv; varying float vDepth; void main(){ vUv = uv; vec4 mv = modelViewMatrix * vec4(position,1.0); vDepth = -mv.z; gl_Position = projectionMatrix * mv; }';
   const cableFrag = `
@@ -1352,71 +1371,109 @@ function makeFiber() {
     cam.aspect = w / h;
     const portrait = cam.aspect < 1;
     const far = portrait ? 1 + (1 - cam.aspect) * 1.2 : 1;
-    // timeline: plug in (outside) -> dive into the cable -> ride inside -> exit into the target port
-    const draw = sstep(0, .14, p), dive = sstep(.1, .26, p), ride = sstep(.24, .84, p);
-    const inside = dive > .98;
+    const SX = portrait ? .4 : 1;
+    // timeline: plug in -> dive -> ride (accelerate, no braking) -> burst out of the target port
+    //           -> target stack lights up -> push into its label -> page fades in
+    const draw = sstep(0, .12, p), dive = sstep(.08, .22, p);
+    const r = Math.max(0, Math.min(1, (p - .2) / .42));
+    const fr = r * r * (1.6 - .6 * r);                      // eases in, still moving fast at the end
+    const rideSpeed = Math.min(1, (3.2 * r - 1.8 * r * r) / 1.4);
+    const exit = sstep(.62, .73, p), push = sstep(.71, .89, p);
+    const inside = dive > .98 && r < 1;
+    const out = r >= 1;
     cable.geo.setDrawRange(0, Math.floor(draw * cable.TS) * cable.per);
-    const rideSpeed = Math.sin(Math.PI * ride);            // 0 -> 1 -> 0 as we accelerate then brake
     const U = cable.mat.uniforms;
     U.uTime.value = R.time;
-    U.uHead.value = Math.max(dive * .02, ride);
-    U.uRide.value = rideSpeed;
-    U.uInT.value += dt * (0.8 + rideSpeed * 9.0);
-    // stacks
-    const arrived = p > .74;
+    U.uHead.value = Math.max(dive * .02, fr);
+    U.uRide.value = out ? 0 : rideSpeed;
+    U.uInT.value += dt * (0.8 + (out ? 0 : rideSpeed) * 9.0);
+    // stacks: source on; destination ignites LED by LED as we burst out
+    const lit = sstep(.6, .7, p);
     units.forEach(u => {
-      const on = u === a ? 1 : (u === b && arrived) ? 1 : 0.22;
-      u.leds.forEach(l => {
-        const v = on * ((Math.sin(R.time * l.rate + l.ph) * .5 + .5) > .35 ? 1 : .25);
+      u.leds.forEach((l, k) => {
+        let on = .22;
+        if (u === a) on = out ? .55 : 1;
+        if (u === b) on = Math.max(.22, Math.min(1, lit * 7 - k));
+        const v = on * ((Math.sin(R.time * l.rate + l.ph) * .5 + .5) > .3 ? 1 : .3);
         if (l.cyan) l.m.material.color.setRGB(.5 * v, .89 * v, .93 * v); else l.m.material.color.setRGB(v, .6 * v, .02);
       });
-      if (u !== a && u !== b) { u.halo.material.opacity = 0; u.port.material.color.set(0x1d232b); }
+      if (u !== a && u !== b) { u.halo.material.opacity = 0; u.port.material.color.set(0x1d232b); u.labelGlow.material.opacity = 0; }
     });
+    a.labelGlow.material.opacity = (1 - dive) * .55;
+    b.labelGlow.material.opacity = lit * (.75 + .25 * Math.sin(R.time * 9) * (1 - push));
     a.port.material.color.copy(R.ca); a.halo.material.color.copy(R.ca); a.halo.material.opacity = inside ? 0 : .85;
     const plugged = draw >= .999;
-    b.port.material.color.set(plugged ? (arrived ? R.cb : R.ca) : 0x1d232b);
-    b.halo.material.color.copy(arrived ? R.cb : R.ca);
-    b.halo.material.opacity = arrived ? 1 : plugged ? .4 : 0;
-    // inside the wire: hide the solid port blocks and show the light at the end of the fiber instead
-    a.port.visible = !inside; b.port.visible = !inside; b.halo.visible = !inside;
-    if (inside && ride > .45) {
-      const endP = cable.curve.getPointAt(1);
+    const tint = (R.cb.getHex() === 0xffffff ? R.ca : R.cb).clone().multiplyScalar(.7);
+    b.port.material.color.set(plugged ? (lit > .01 ? tint : R.ca) : 0x1d232b);
+    b.halo.material.color.copy(lit > .01 ? R.cb : R.ca);
+    b.halo.material.opacity = lit > .01 ? .9 * (1 - push * .6) : plugged ? .4 : 0;
+    a.port.visible = !inside; b.port.visible = !inside && !(out && exit < .4); b.halo.visible = !inside && !(out && exit < .4);
+    cable.mesh.visible = !(out && exit < .4);              // don't clip through the cable while backing out of the port
+    document.getElementById('travel').classList.toggle('out', out);
+    // light at the end of the fiber while riding
+    const curve = cable.curve, endP = curve.getPointAt(1);
+    if (inside && r > .4) {
+      const k = sstep(.4, 1, r), dist = Math.max(.004, cam.position.distanceTo(endP));
       R.pulse.position.copy(endP);
       R.pulse.material.color.copy(R.cb.getHex() === 0xffffff ? R.ca : R.cb).lerp(new THREE.Color(0xffffff), .55);
-      const k = sstep(.45, 1, ride);
-      const dist = Math.max(.004, cam.position.distanceTo(endP));
-      R.pulse.material.opacity = k;
-      R.pulse.scale.setScalar(dist * (.18 + k * .32));
+      R.pulse.material.opacity = k; R.pulse.scale.setScalar(dist * (.18 + k * .32));
     } else R.pulse.material.opacity = 0;
-    R.pulseLight.intensity = 0;
+    // burst of light as we leave the fiber through the port
+    const bk = out ? Math.max(0, 1 - exit * 1.5) : 0;
+    R.burst.position.copy(b.port.position).add(V3(0, 0, .045));
+    R.burst.material.color.copy(R.cb.getHex() === 0xffffff ? R.ca : R.cb).lerp(new THREE.Color(0xffffff), .3);
+    const bd = Math.max(.02, cam.position.distanceTo(R.burst.position));
+    R.burst.material.opacity = bk * .75; R.burst.scale.setScalar(bd * 1.1 + exit * .45);
+    R.pulseLight.intensity = out ? .55 * sstep(.35, 1, exit) * (1 - push) : 0;
+    R.pulseLight.position.copy(b.port.position).add(V3(0, .05, .35));
     R.dust.rotation.y += dt * .02;
     // camera
-    const curve = cable.curve;
-    const u = .012 + ride * .935;
+    const u = .012 + fr * .976;
     const inP = curve.getPointAt(u), inL = curve.getPointAt(Math.min(1, u + .03));
     const idx = Math.min(cable.TS, Math.round(u * cable.TS));
     const inUp = cable.geo.normals[idx] ? cable.geo.normals[idx].clone() : V3(0, 1, 0);
-    const port = a.port.position;
-    const estP = port.clone().add(V3(.55 * (portrait ? .4 : 1) * far, .2, 1.25 * far)), estL = port.clone().add(V3(.15, -.03, .1));
-    let pos, look, up;
-    if (!inside) {
-      const k = dive * dive;                               // ease into the port
+    const pa = a.port.position, pb = b.port.position;
+    const estP = pa.clone().add(V3(.55 * SX * far, .2, 1.25 * far)), estL = pa.clone().add(V3(.15, -.03, .1));
+    let pos, look, up, fov;
+    if (!out && !inside) {                                    // plug-in shot, easing into the port
+      const k = dive * dive;
       pos = estP.clone().lerp(curve.getPointAt(.012), k);
       look = estL.clone().lerp(curve.getPointAt(.045), sstep(0, .6, dive));
       up = V3(0, 1, 0).lerp(inUp, k).normalize();
-    } else { pos = inP; look = inL; up = inUp; }
+      fov = portrait ? 55 : 42;
+    } else if (inside) {                                      // riding inside the wire
+      pos = inP; look = inL; up = inUp;
+      fov = 68 + rideSpeed * 24;
+    } else {                                                  // out of the port, pull back, then push into the label
+      // back out of the port along +z, then drift left (away from the cable) to frame the whole stack
+      const mid = pb.clone().add(V3(-.05, .04, .42));
+      const front = V3(-.05, b.y + .16, pb.z + (portrait ? 2.3 : 1.55) * far);
+      const stackC = V3(-.1, b.y, pb.z), labelC = V3(b.labelX, b.y, pb.z);
+      // push in only as far as the whole label still fits the screen
+      const fovEnd = portrait ? 47 : 36;
+      const hHalf = Math.atan(Math.tan(fovEnd * Math.PI / 360) * cam.aspect);
+      const closeD = Math.max(.55, (b.labelW * .62) / Math.tan(hHalf));
+      const close = V3(b.labelX + .02, b.y + .02, pb.z + closeD);
+      const start = pb.clone().add(V3(.02, 0, .075));       // just in front of the port, never inside its box
+      const e1 = sstep(0, .45, exit), e2 = sstep(.35, 1, exit);
+      pos = start.lerp(mid, e1).lerp(front, e2).lerp(close, push);
+      look = pb.clone().lerp(stackC, e2).lerp(labelC, push);
+      up = inUp.clone().lerp(V3(0, 1, 0), sstep(0, .5, exit)).normalize();
+      fov = (portrait ? 55 : 42) + 30 * (1 - exit) - (portrait ? 8 : 6) * push;
+    }
     cam.up.copy(up);
     cam.position.copy(pos); cam.lookAt(look);
-    if (inside) cam.rotateZ(R.time * .6);
-    cam.fov = inside ? 68 + rideSpeed * 22 : (portrait ? 55 : 42);
-    cam.near = dive > .5 ? 0.002 : 0.01;
+    if (inside) cam.rotateZ(R.time * .6 * (1 - sstep(.75, 1, r)));
+    cam.fov = fov;
+    cam.near = (inside || (out && exit < .3)) ? 0.002 : 0.01;
     cam.updateProjectionMatrix();
     renderer.render(R.sc, cam);
   }
   function rackEnd() {
     if (!R || !R.cable) return;
     R.sc.remove(R.cable.mesh); R.cable.geo.dispose(); R.cable.mat.dispose(); R.cable = null;
-    R.units.forEach(u => { u.port.visible = true; u.halo.visible = true; });
+    R.units.forEach(u => { u.port.visible = true; u.halo.visible = true; u.labelGlow.material.opacity = 0; });
+    R.burst.material.opacity = 0;
     R.pulse.material.opacity = 0; R.pulseLight.intensity = 0;
   }
 
@@ -1450,6 +1507,7 @@ const travelEl = $('#travel'), hudBar = $('#hudBar'), hudDest = $('#hudDest'), h
 
 /* ---------- Loop ---------- */
 let running = false, last = 0, speed = 0, boot = 0, bootTarget = 0, heroVisible = true, travel = null, pendingPop = null;
+let tripCount = 0;
 let lastSY = scrollY, scrollBoost = 0, heroProg = 0, dirNow = 1;
 addEventListener('scroll', () => {
   const sy = scrollY, v = Math.abs(sy - lastSY); lastSY = sy;
@@ -1464,14 +1522,15 @@ function loop(now) {
   boot += (bootTarget - boot) * Math.min(1, dt * 2.2);
   if (travel) {
     const p = Math.max(0, Math.min(1, (now - travel.start) / travel.dur));
-    if (p > .14 && !travel.plugged) { travel.plugged = true; Sound.soft(); }
+    if (p > .12 && !travel.plugged) { travel.plugged = true; Sound.soft(); }
+    if (p > .63 && !travel.clicked) { travel.clicked = true; Sound.soft(); if (navigator.vibrate && Sound.on) { try { navigator.vibrate(18); } catch (e) {} } }
     hudBar.style.width = (Math.min(1, p / .85) * 100) + '%';
     const hops = Math.min(travel.hops, 1 + Math.floor(p / .85 * travel.hops));
     hudHops.textContent = `hop ${String(hops).padStart(2, '0')}/${String(travel.hops).padStart(2, '0')}`;
     hudLat.textContent = (0.08 + p * 0.34 + Math.random() * 0.02).toFixed(2) + ' ms';
-    if (p > .74 && !travel.flashed) { travel.flashed = true; travelEl.classList.add('flashing'); }
-    if (p > .85 && !travel.jumped) { travel.jumped = true; land(travel.id); }
-    if (p >= 1) { travel = null; if (fiber) fiber.rackEnd(); body.classList.remove('traveling'); travelEl.classList.remove('flashing'); if (pendingPop) { const n = pendingPop; pendingPop = null; setTimeout(() => go(n, {fromPop:true}), 60); } }
+    
+    if (p > .9 && !travel.jumped) { travel.jumped = true; land(travel.id); body.classList.add('fading'); }
+    if (p >= 1) { travel = null; if (fiber) fiber.rackEnd(); body.classList.remove('traveling', 'fading'); travelEl.classList.remove('flashing', 'out'); if (pendingPop) { const n = pendingPop; pendingPop = null; setTimeout(() => go(n, {fromPop:true}), 60); } }
   }
   scrollBoost *= Math.exp(-dt * 2.6);
   const eff = scrollBoost * .5 + heroProg * .22;
@@ -1595,7 +1654,8 @@ function go(id, opts = {}) {
   hudDest.textContent = d.label;
   hudPath.textContent = `Port ${String(ia + 1).padStart(2, '0')} ${units[ia].label} → Port ${String(ib + 1).padStart(2, '0')} ${units[ib].label}`;
   hudBar.style.width = '0%';
-  travel = {id, dir: 1, start: performance.now(), dur: 2700, hops: 2 + Math.abs(ib - ia), flashed:false, jumped:false, plugged:false};
+  tripCount++;
+  travel = {id, dir: 1, start: performance.now(), dur: tripCount === 1 ? 2200 : 1400, clicked:false, hops: 2 + Math.abs(ib - ia), flashed:false, jumped:false, plugged:false};
   body.classList.add('traveling');
   Sound.travel(travel.dur / 1000, 1);
   wake();
