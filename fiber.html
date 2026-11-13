@@ -1422,6 +1422,7 @@ function makeFiber() {
 
   return {
     U, rackBegin, rackStep, rackEnd, units: RACK_UNITS,
+    prebuild() { if (!R) R = buildRack(); },
     tint(a, b) { c1.set(a); c2.set(b); },
     step(dt, speed, boot, glow = 1, dir = 1) {
       U.uSpeed.value = speed; U.uBoot.value = boot; U.uGlow.value = glow;
@@ -1439,6 +1440,11 @@ function makeFiber() {
 }
 
 const fiber = makeFiber();
+if (fiber) {
+  const pre = () => { try { fiber.prebuild(); } catch (e) {} };
+  const idle = window.requestIdleCallback || (f => setTimeout(f, 300));
+  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => idle(pre));
+}
 const body = document.body;
 const travelEl = $('#travel'), hudBar = $('#hudBar'), hudDest = $('#hudDest'), hudHops = $('#hudHops'), hudLat = $('#hudLat'), hudPath = $('#hudPath');
 
@@ -1595,11 +1601,24 @@ function go(id, opts = {}) {
   wake();
 }
 
+/* No scrolling while a patch is in flight */
+['wheel', 'touchmove'].forEach(ev => addEventListener(ev, e => { if (travel) e.preventDefault(); }, {passive:false}));
+addEventListener('keydown', e => {
+  if (travel && ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) e.preventDefault();
+  if (e.key === 'Escape' && body.classList.contains('menu-open')) { body.classList.remove('menu-open'); menuBtn.setAttribute('aria-expanded', false); menuBtn.focus(); }
+});
+
 /* Back / forward buttons fly through the fiber too */
 addEventListener('popstate', () => { const id = idFromHash(location.hash) || 'top'; go(id, {fromPop:true}); });
 try { history.scrollRestoration = 'manual'; } catch (e) {}
 const startRoute = idFromHash(location.hash);
-if (location.hash) scrollTo(0, 0);
+if (location.hash) {
+  // keep the boot screen in view: drop the fragment so the browser doesn't jump to the section,
+  // then fly there once the boot finishes
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  scrollTo(0, 0);
+  addEventListener('load', () => { if (!body.classList.contains('booted')) scrollTo({top:0, behavior:'instant'}); }, {once:true});
+}
 
 /* Touch press feedback */
 document.addEventListener('pointerdown', e => {
@@ -1840,7 +1859,11 @@ const Rack = (() => {
       $('#boot').classList.add('done'); body.classList.add('booted', 'lit');
       try { sessionStorage.setItem('mvjce-booted', '1'); } catch (e) {}
       setTimeout(() => body.classList.add('settled'), 1200);
-      if (startRoute && startRoute !== 'top') setTimeout(() => go(startRoute, {fromPop:true}), reduce ? 0 : 450);
+      if (startRoute && startRoute !== 'top') {
+        setTimeout(() => go(startRoute), reduce ? 0 : 450);
+        // late-loading fonts can shift the layout; re-align once they're in (no animation path)
+        if (reduce && document.fonts) document.fonts.ready.then(() => { const el = document.getElementById(startRoute); if (el) el.scrollIntoView({block:'start', behavior:'instant'}); });
+      }
     }, reduce ? 0 : 380);
   }
   $('#skipBoot').addEventListener('click', finish);
