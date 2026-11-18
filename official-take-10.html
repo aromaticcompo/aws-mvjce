@@ -79,6 +79,35 @@
     @media(max-width:680px){.case-study{grid-template-columns:1fr}.hero h1{font-size:clamp(39px,10vw,65px)}.fiber-figure{border-left:0;border-top:1px solid var(--line)}.fiber-visual{min-height:190px}}
     @media(prefers-reduced-motion:reduce){.fiber-path::after{animation:none}}
     @media print{.fiber-path::after{animation:none}.hero h1{font-size:40pt}}
+  
+    .hero-scene{position:relative}
+    .hero-scene .wrap{position:relative}
+    .hero h1{max-width:none}
+    .title-line{display:block}
+    .scene-frame,.method-progress{display:none}
+    #approach .method-list li h3{transition:color 180ms ease}
+    #approach .method-list li[data-current] h3{color:var(--teal)}
+    @media (prefers-reduced-motion:no-preference){
+      .hero .label,.hero .title-line,.hero-end{animation:arrive 650ms cubic-bezier(.2,.8,.2,1) both}
+      .hero .title-line:nth-child(1){animation-delay:65ms}
+      .hero .title-line:nth-child(2){animation-delay:145ms}
+      .hero-end{animation-delay:220ms}
+      @keyframes arrive{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+      .motion-ready .method-progress{display:block;height:2px;background:var(--line);margin-bottom:15px}
+      .method-progress span{display:block;height:100%;background:var(--teal);transform:scaleX(var(--method-progress,0));transform-origin:left}
+      .motion-ready .case-study{transform:translateY(var(--case-offset,0px))}
+      .motion-ready .fiber-path::after{animation:none}
+      .motion-ready .case-study.in-view .fiber-path::after{animation:fiber-signal 2.8s ease-in-out}
+    }
+    @media (min-width:900px) and (min-height:640px) and (prefers-reduced-motion:no-preference){
+      .motion-ready .hero-scene{padding-bottom:clamp(120px,24vh,235px)}
+      .motion-ready .hero{position:sticky;top:0}
+      .motion-ready .hero h1{max-width:calc(100% - 210px)}
+      .motion-ready .hero-end{margin-right:180px}
+      .motion-ready .scene-frame{display:grid;place-items:center;position:absolute;right:16px;top:38%;width:118px;aspect-ratio:1;border:1px solid var(--strong-line);opacity:var(--frame-opacity,1);transform:scale(var(--frame-scale,1));transform-origin:center;pointer-events:none}
+      .scene-frame span{width:52%;aspect-ratio:1;border:1px solid var(--amber);border-radius:36% 0 36% 0}
+    }
+    @media print{.hero-scene{padding:0!important}.scene-frame,.method-progress{display:none!important}.case-study{transform:none!important}}
   </style>
   <script>
     try {
@@ -97,15 +126,18 @@
     </div>
   </header>
   <main id="main">
+    <div class="hero-scene">
     <div class="hero">
       <div class="wrap">
         <p class="label">MVJ College of Engineering · Bengaluru</p>
-        <h1>AWS Student Builder Group<span class="hero-dot">.</span></h1>
+        <h1><span class="title-line">AWS Student</span> <span class="title-line">Builder Group<span class="hero-dot">.</span></span></h1>
         <div class="hero-end">
           <p class="intro">We’re a student-run group at MVJCE. We learn cloud computing by building projects, testing what works, and reviewing the results together.</p>
           <a class="primary-link" href="#work">Explore our work <span aria-hidden="true">&darr;</span></a>
         </div>
+        <div class="scene-frame" aria-hidden="true"><span></span></div>
       </div>
+    </div>
     </div>
     <section id="work" aria-labelledby="work-title">
       <div class="wrap">
@@ -134,6 +166,7 @@
         <div class="section-heading"><h2 id="approach-title">How a session works</h2></div>
         <div>
           
+          <div class="method-progress" aria-hidden="true"><span></span></div>
           <ol class="method-list">
             <li><div><h3>Define the task</h3><p>Agree on the problem, the scope, and what a useful result looks like. Make responsibilities and required preparation clear.</p></div></li>
             <li><div><h3>Build and keep a record</h3><p>Work on the task, test assumptions, and record decisions. When something fails, keep the failure useful by documenting what happened.</p></div></li>
@@ -189,6 +222,54 @@
     systemTheme.addEventListener('change', renderTheme);
     renderTheme();
     themeSwitch.hidden = false;
+  </script>
+  <script>
+    const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+    const scene = document.querySelector('.hero-scene');
+    const hero = scene.querySelector('.hero');
+    const caseStudy = document.querySelector('.case-study');
+    const approach = document.querySelector('#approach');
+    const steps = Array.from(approach.querySelectorAll('.method-list li'));
+    const clampProgress = value => Math.min(1, Math.max(0, value));
+    let framePending = false;
+
+    function updateMotion() {
+      framePending = false;
+      const enabled = !motionPreference.matches;
+      root.classList.toggle('motion-ready', enabled);
+      if (!enabled) return;
+
+      const viewport = window.innerHeight;
+      const sceneBounds = scene.getBoundingClientRect();
+      const distance = Math.max(1, sceneBounds.height - hero.offsetHeight);
+      const progress = clampProgress(-sceneBounds.top / distance);
+      scene.style.setProperty('--frame-scale', String(1 + progress * 0.85));
+      scene.style.setProperty('--frame-opacity', String(1 - progress * 0.88));
+
+      const caseTop = caseStudy.closest('section').getBoundingClientRect().top;
+      const reveal = clampProgress((viewport * 0.92 - caseTop) / (viewport * 0.42));
+      caseStudy.style.setProperty('--case-offset', `${(1 - reveal) * 22}px`);
+      caseStudy.classList.toggle('in-view', reveal > 0.18);
+
+      const activationLine = viewport * 0.65;
+      const firstTop = steps[0].getBoundingClientRect().top;
+      const lastBottom = steps.at(-1).getBoundingClientRect().bottom;
+      const completion = clampProgress((activationLine - firstTop) / (lastBottom - firstTop));
+      approach.style.setProperty('--method-progress', String(completion));
+      const activeStep = steps.findLastIndex(step => step.getBoundingClientRect().top <= activationLine);
+      steps.forEach((step, index) => step.toggleAttribute('data-current', index === activeStep));
+    }
+
+    function scheduleMotion() {
+      if (framePending) return;
+      framePending = true;
+      requestAnimationFrame(updateMotion);
+    }
+
+    addEventListener('scroll', scheduleMotion, {passive: true});
+    addEventListener('resize', scheduleMotion);
+    motionPreference.addEventListener('change', scheduleMotion);
+    scheduleMotion();
   </script>
 </body>
 </html>
