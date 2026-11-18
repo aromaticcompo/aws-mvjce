@@ -97,7 +97,7 @@
       .method-progress span{display:block;height:100%;background:var(--teal);transform:scaleX(var(--method-progress,0));transform-origin:left}
       .motion-ready .case-study{transform:translateY(var(--case-offset,0px))}
       .motion-ready .fiber-path::after{animation:none}
-      .motion-ready .case-study.in-view .fiber-path::after{animation:fiber-signal 2.8s ease-in-out}
+
     }
     @media (min-width:900px) and (min-height:640px) and (prefers-reduced-motion:no-preference){
       .motion-ready .hero-scene{padding-bottom:clamp(120px,24vh,235px)}
@@ -179,6 +179,43 @@
       }
     }
     @media print { header { position: static; } }
+  
+    .fiber-figure figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; }
+    .replay-signal {
+      min-height: 44px;
+      padding: 6px 11px;
+      border: 1px solid var(--strong-line);
+      border-radius: 3px;
+      background: var(--surface);
+      color: var(--ink);
+      font: 650 13px Figtree, system-ui, sans-serif;
+      cursor: pointer;
+    }
+    .replay-signal[hidden] { display: none; }
+    .replay-signal:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+    .fiber-path { height: 3px; }
+    .fiber-path::after {
+      width: 14px;
+      height: 14px;
+      top: -5.5px;
+      opacity: 0;
+      box-shadow: 0 0 5px 2px #ffc27d, 0 0 20px 6px #ffac5a9c;
+      animation: none;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .motion-ready .fiber-visual.is-playing .fiber-path::after {
+        animation: visible-signal 1.85s ease-in-out 2;
+      }
+      @keyframes visible-signal {
+        0% { left: 0; opacity: 0; }
+        12%, 83% { opacity: 1; }
+        100% { left: calc(100% - 14px); opacity: 0; }
+      }
+    }
+    @media (max-width: 680px) and (prefers-reduced-motion: no-preference) {
+      .motion-ready .scene-frame, .scene-frame span { height: 4px; }
+    }
+    @media print { .replay-signal { display: none; } }
   </style>
   <script>
     try {
@@ -227,7 +264,7 @@
               <div class="fiber-path"></div>
               <div class="rack rack-destination"><i></i><i></i><i></i></div>
             </div>
-            <figcaption>Fiber’s navigation concept, illustrated</figcaption>
+            <figcaption><span>Fiber’s navigation concept</span><button type="button" class="replay-signal" hidden>Replay animation</button></figcaption>
           </figure>
         </article>
       </div>
@@ -299,16 +336,36 @@
     const scene = document.querySelector('.hero-scene');
     const hero = scene.querySelector('.hero');
     const caseStudy = document.querySelector('.case-study');
+    const fiberVisual = caseStudy.querySelector('.fiber-visual');
+    const replaySignal = caseStudy.querySelector('.replay-signal');
+    const header = document.querySelector('header');
     const approach = document.querySelector('#approach');
     const steps = Array.from(approach.querySelectorAll('.method-list li'));
     const clampProgress = value => Math.min(1, Math.max(0, value));
     let framePending = false;
+    let signalWasVisible = false;
+
+    function playSignal() {
+      fiberVisual.classList.remove('is-playing');
+      void fiberVisual.offsetWidth;
+      fiberVisual.classList.add('is-playing');
+    }
+
+    replaySignal.addEventListener('click', () => {
+      signalWasVisible = true;
+      playSignal();
+    });
 
     function updateMotion() {
       framePending = false;
       const enabled = !motionPreference.matches;
       root.classList.toggle('motion-ready', enabled);
-      if (!enabled) return;
+      replaySignal.hidden = !enabled;
+      if (!enabled) {
+        fiberVisual.classList.remove('is-playing');
+        signalWasVisible = false;
+        return;
+      }
 
       const viewport = window.innerHeight;
       const sceneBounds = scene.getBoundingClientRect();
@@ -322,7 +379,12 @@
       const caseTop = caseStudy.closest('section').getBoundingClientRect().top;
       const reveal = clampProgress((viewport * 0.92 - caseTop) / (viewport * 0.42));
       caseStudy.style.setProperty('--case-offset', `${(1 - reveal) * 22}px`);
-      caseStudy.classList.toggle('in-view', reveal > 0.18);
+      const diagram = fiberVisual.getBoundingClientRect();
+      const visibleTop = Math.max(0, header.getBoundingClientRect().bottom);
+      const visibleHeight = Math.min(viewport, diagram.bottom) - Math.max(visibleTop, diagram.top);
+      const signalIsVisible = visibleHeight >= Math.min(diagram.height, viewport - visibleTop) * 0.7;
+      if (signalIsVisible && !signalWasVisible) playSignal();
+      signalWasVisible = signalIsVisible;
 
       const activationLine = viewport * 0.65;
       const firstTop = steps[0].getBoundingClientRect().top;
