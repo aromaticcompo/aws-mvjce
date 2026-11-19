@@ -154,6 +154,10 @@
     @media print {
       .project { box-shadow: none; }
     }
+      /* Soften the corners while keeping the solid borders and offset. */
+    .project, .standard { border-radius: 8px; }
+    .hero-end .text-link { border-radius: 5px; }
+    .brand-mark, .switch-track, .switch-track::before { border-radius: 3px; }
   </style>
   <script>
     try {
