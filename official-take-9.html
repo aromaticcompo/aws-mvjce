@@ -133,47 +133,26 @@
       .hero-end .text-link { background: none; color: var(--ink); }
     }
   
-    /* Solid rules define the grid. Offset edges mark the two main reading blocks. */
+    /* Keep the offset edge on the featured project. */
     .hero .label {
-      display: inline-block;
-      max-width: 100%;
-      padding: 7px 10px;
-      background: var(--ink);
-      color: var(--paper);
-      line-height: 1.5;
+      color: var(--teal);
     }
     .hero-end {
-      border: 1px solid var(--rule);
-      border-left: 5px solid var(--amber);
-      background: var(--surface);
       align-items: center;
-      padding: clamp(19px, 3vw, 34px);
     }
-    .hero-end .intro { color: var(--ink); }
-    .hero-end .text-link { border: 1px solid var(--rule); }
-    .project, .standard {
-      border: 2px solid var(--rule);
-      box-shadow: 5px 5px 0 var(--rule);
+    .project {
+      border-top-width: 2px;
+      box-shadow: 3px 3px 0 var(--rule);
     }
-    .standard { border-left: 5px solid var(--amber); }
-    .standard h3 {
-      display: inline-block;
-      background: var(--ink);
-      color: var(--paper);
-      padding: 5px 8px;
-      margin: 0 0 10px;
-      font: 700 12px/1.35 ui-monospace, Consolas, monospace;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+    .standard {
+      border-left-width: 3px;
     }
     @media (max-width: 680px) {
-      .hero-end { align-items: start; padding: 17px; }
-      .project, .standard { box-shadow: 3px 3px 0 var(--rule); }
+      .hero-end { align-items: start; }
+      .project { box-shadow: 2px 2px 0 var(--rule); }
     }
     @media print {
-      .hero .label, .standard h3 { background: transparent; color: var(--ink); padding-inline: 0; }
-      .hero-end { background: transparent; padding: 12px; }
-      .project, .standard { box-shadow: none; }
+      .project { box-shadow: none; }
     }
   </style>
   <script>
