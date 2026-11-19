@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AWS@MVJCE - Club overview & work</title>
   <meta name="description" content="An overview of AWS@MVJCE: practical cloud work, the working standard, a published project, and the student team.">
-  <meta name="theme-color" content="#f4f3ed">
+  <meta name="theme-color" content="#f5f3ed">
   <link rel="canonical" href="https://aromaticcompo.github.io/aws-mvjce/official-take-9.html">
   <style>
     @font-face{font-family:Figtree;src:url('fonts/figtree.woff2') format('woff2');font-weight:300 900;font-display:swap}
@@ -53,6 +53,65 @@
       .hero-end{flex-direction:column;align-items:start;gap:14px}
     }
     @media print{.theme-switch{display:none}:root,:root[data-theme="dark"]{--paper:#fff;--surface:#f4f3ed;--ink:#19272b;--muted:#495b5e;--teal:#2e605a;--line:#c8cec5;--strong-line:#899c91;--amber:#9f5513;--edge-glint:#fff}.hero h1{font-size:42pt}}
+  
+    /* Square edges and flat rules carry the visual weight in both themes. */
+    :root { --rule: var(--teal); }
+    header, section, footer { border-color: var(--rule); }
+    header { border-bottom-width: 2px; }
+    section { border-top-width: 2px; box-shadow: none; }
+    .brand { font-weight: 800; }
+    .brand-mark { width: 10px; height: 25px; }
+    .label, .project-type, dt, .team-table th {
+      font-family: ui-monospace, Consolas, monospace;
+      letter-spacing: .08em;
+    }
+    .hero { padding-block: clamp(46px, 7vw, 105px) clamp(38px, 5vw, 70px); }
+    .hero h1 { font-weight: 800; letter-spacing: -.06em; }
+    .hero-end { border-top: 2px solid var(--rule); }
+    .hero-end .text-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      background: var(--teal);
+      color: var(--paper);
+      padding: 8px 14px;
+      text-decoration: none;
+    }
+    .hero-end .text-link:hover { text-decoration: underline; }
+    .hero-end .text-link:focus-visible { outline-offset: 4px; }
+    .section-heading .label { margin-bottom: 8px; }
+    .section-heading h2 { font-weight: 750; }
+    .project {
+      border: 2px solid var(--rule);
+      border-top-width: 5px;
+      box-shadow: none;
+    }
+    .project h3 { font-weight: 780; }
+    .project .links a { display: inline-flex; align-items: center; min-height: 44px; }
+    .method-list li:first-child, .team-table th { border-top: 2px solid var(--rule); }
+    .team-table th { padding-top: 10px; }
+    .standard {
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--amber);
+    }
+    .standard h3 { font-size: 17px; margin: 0 0 6px; }
+    details { border-top-color: var(--line); }
+    details:first-of-type { border-top: 2px solid var(--rule); }
+    .switch-track, .switch-track::before { border-radius: 0; }
+    @media (max-width: 680px) {
+      .wrap { width: calc(100% - 32px); }
+      .header-inner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 8px; padding: 6px 0 0; }
+      .header-inner nav { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+      .header-inner nav a { display: grid; place-items: center; min-height: 44px; }
+      .theme-switch { grid-column: 2; grid-row: 1; }
+      .hero h1 { font-size: clamp(33px, 10vw, 65px); }
+      .hero-end { flex-direction: column; align-items: start; gap: 14px; }
+      .section-grid { grid-template-columns: 1fr; gap: 19px; }
+      .project-header { flex-direction: column; gap: 0; }
+      .project-type { order: -1; margin-bottom: 10px; }
+    }
+    @media print { .hero h1 { font-size: 42pt; } .hero-end .text-link { background: none; color: var(--ink); } }
   </style>
   <script>
     try {
@@ -76,7 +135,7 @@
         <p class="label">MVJ College of Engineering · Bengaluru</p>
         <h1>AWS Student<br>Builder Group<span class="hero-dot">.</span></h1>
         <div class="hero-end">
-          <p class="intro">We’re a student-run club at MVJCE focused on practical cloud computing. We work through technical tasks, build projects, and review the results together.</p>
+          <p class="intro">We’re a student-run cloud computing club at MVJCE. We build projects, test the results, and review the work together.</p>
           <a class="text-link" href="#work">View our work <span aria-hidden="true">↓</span></a>
         </div>
       </div>
@@ -86,10 +145,9 @@
         <div class="section-heading"><p class="label">Work</p><h2 id="work-title">Published work</h2></div>
         <article class="project" aria-labelledby="fiber-title">
           <div class="project-header"><h3 id="fiber-title">Fiber</h3><span class="project-type">Interactive web experiment</span></div>
-          <p>An experimental version of the club website. It uses a 3D server rack and a glowing patch cable to navigate between sections, exploring how a technical idea can become an interface.</p>
-          <dl class="project-meta"><div><dt>Technical scope</dt><dd>3D rendering, interaction design, and browser audio.</dd></div><div><dt>Available to review</dt><dd>The live experience and the HTML source in the public repository.</dd></div></dl>
-          <div class="links"><a class="text-link" href="fiber.html" target="_blank" rel="noopener">Open the experiment <span aria-hidden="true">?</span></a><a class="text-link" href="https://github.com/aromaticcompo/aws-mvjce/blob/main/fiber.html" target="_blank" rel="noopener">Read the source <span aria-hidden="true">?</span></a></div>
-          <p class="project-footnote">Scope: browser-based prototype deployed on GitHub Pages.</p>
+          <p>Fiber is an interactive version of the club site. Each section is represented by a 3D server rack. A virtual patch cable takes you between sections.</p>
+          <dl class="project-meta"><div><dt>Technical scope</dt><dd>3D rendering, interaction design, and browser audio.</dd></div><div><dt>Deployment</dt><dd>Browser prototype hosted on GitHub Pages.</dd></div></dl>
+          <div class="links"><a class="text-link" href="fiber.html" target="_blank" rel="noopener">Open the experiment <span aria-hidden="true">&nearr;</span></a><a class="text-link" href="https://github.com/aromaticcompo/aws-mvjce/blob/main/fiber.html" target="_blank" rel="noopener">Read the source <span aria-hidden="true">&nearr;</span></a></div>
         </article>
       </div>
     </section>
@@ -103,7 +161,7 @@
             <li><div><h3>Build and keep a record</h3><p>Work on the task, test assumptions, and record decisions. When something fails, keep the failure useful by documenting what happened.</p></div></li>
             <li><div><h3>Review and follow through</h3><p>Demonstrate what works, state what remains unresolved, and agree on the next action. Feedback is welcome from every team member, regardless of role.</p></div></li>
           </ol>
-          <div class="standard"><p><strong>First session.</strong> We’ll agree on one task and what a useful result looks like. Come prepared to contribute, explain your decisions, and take feedback. Everyone on the team can give it.</p></div>
+          <div class="standard"><h3>First session</h3><p>We’ll define one task and agree on what counts as done. Everyone is expected to contribute, explain their decisions, and give and take feedback. We’ll end by reviewing the result and recording what still needs work.</p></div>
           <p class="aside-line">The first demo is allowed to have bugs. The review should know which ones.</p>
         </div>
       </div>
@@ -113,7 +171,6 @@
         <div class="section-heading"><p class="label">Team</p><h2 id="team-title">Student leadership</h2></div>
         <div>
           <table class="team-table"><caption style="text-align:left;font-size:14px;color:var(--muted);padding-bottom:18px">Team roster</caption><thead><tr><th scope="col">Name</th><th scope="col">Role</th></tr></thead><tbody><tr><td>Mohammed Sahif</td><td>President</td></tr><tr><td>C Varun</td><td>Vice President</td></tr><tr><td>Srikant</td><td>Tech Lead</td></tr><tr><td>Shashank Gowda</td><td>PR Lead</td></tr></tbody></table>
-          <p class="team-note">Roles provide a point of responsibility. Technical suggestions, criticism, and corrections are welcome from the whole team.</p>
         </div>
       </div>
     </section>
@@ -121,16 +178,15 @@
       <div class="wrap section-grid">
         <div class="section-heading"><p class="label">Clarifications</p><h2 id="questions-title">Common questions</h2></div>
         <div>
-          <details open><summary>What does the club focus on?</summary><p>Practical cloud learning and technical projects. The aim is to connect concepts to tasks that can be built, tested, and reviewed. Fiber is one published web experiment available for inspection.</p></details>
           <details><summary>What is the relationship with AWS?</summary><p>The club focuses on cloud learning with AWS. It is student-run. The club name does not, by itself, establish AWS sponsorship, employment, certification, or endorsement.</p></details>
           <details><summary>What should a project review include?</summary><p>A clear problem statement, the working artifact or source, the people responsible, and an honest account of limitations and next steps. A demonstration should be distinguishable from a production deployment.</p></details>
           <details><summary>Where are session dates and registration?</summary><p>No confirmed session schedule or registration destination is published on this page. Dates, venue, preparation, and the responsible organiser should be shared once confirmed.</p></details>
-          <details><summary>How is feedback handled?</summary><p>Raise the issue, explain the reasoning, and suggest a practical next step where possible. Feedback is welcome from all team members. The work is open to challenge; criticism should address the work and remain respectful.</p></details>
+          <details><summary>How is feedback handled?</summary><p>Any team member can raise an issue. Explain what you observed, why it matters, and what you’d change. We discuss the work and agree on a next step.</p></details>
         </div>
       </div>
     </section>
   </main>
-  <footer><div class="wrap"><div class="footer-top"><span>AWS@MVJCE � MVJ College of Engineering, Bengaluru</span><a href="#main">Back to overview </a></div><p class="footer-legal">Student-run community. AWS is a trademark of Amazon.com, Inc. or its affiliates.</p></div></footer>
+  <footer><div class="wrap"><div class="footer-top"><span>AWS@MVJCE &middot; MVJ College of Engineering, Bengaluru</span><a href="#main">Back to overview &uarr;</a></div><p class="footer-legal">Student-run community. AWS is a trademark of Amazon.com, Inc. or its affiliates.</p></div></footer>
   <script>
     const root = document.documentElement;
     const themeSwitch = document.querySelector('.theme-switch');
