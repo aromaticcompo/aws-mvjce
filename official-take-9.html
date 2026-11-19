@@ -154,10 +154,19 @@
     @media print {
       .project { box-shadow: none; }
     }
-      /* Soften the corners while keeping the solid borders and offset. */
-    .project, .standard { border-radius: 8px; }
-    .hero-end .text-link { border-radius: 5px; }
-    .brand-mark, .switch-track, .switch-track::before { border-radius: 3px; }
+      /* Use visible curves even where a hard offset shadow is present. */
+    .project, .standard { border-radius: 22px; }
+    .hero-end .text-link { border-radius: 12px; }
+    .brand-mark { border-radius: 5px; }
+    .switch-track, .switch-track::before { border-radius: 999px; }
+    #questions .section-grid > div:last-child {
+      border: 1px solid var(--strong-line);
+      border-radius: 18px;
+    }
+    #questions details { padding-inline: clamp(14px, 3vw, 26px); }
+    #questions details:first-of-type { border-top: 0; }
+    #questions details:last-child { border-bottom: 0; }
+    #questions summary:focus-visible { outline-offset: -3px; border-radius: 8px; }
   </style>
   <script>
     try {
